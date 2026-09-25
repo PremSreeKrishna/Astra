@@ -1,0 +1,607 @@
+{
+  "storyId": "ado-3422",
+  "storyTitle": "As a Data Governance Administrator, I want LLM-generated reporting queries constrained by approved PostgreSQL rules so that sensitive automotive data is protected during AI-assisted reporting",
+  "testCases": [],
+  "functional": [
+    {
+      "id": "TC-FUNC-001",
+      "title": "Generate and execute an approved read-only reporting query against allowed PostgreSQL objects through the happy-path UI flow",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated in the application as a Data Governance Administrator with permission to access the AI Reporting feature.",
+        "Approved PostgreSQL reporting objects are configured and available, including reporting.vehicle_warranty_summary view and reporting.dealer_dimension table.",
+        "The AI Reporting page is reachable from the main navigation and the application database contains non-sensitive sample records for dealer and warranty reporting.",
+        "Audit logging is enabled and compliance reviewers can retrieve audit entries for query requests."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "From the main navigation, open the \"AI Reporting\" page and verify the natural-language input area, \"Generate Query\" button, and results panel are displayed.",
+          "expectedResult": "The AI Reporting page loads successfully for the authenticated administrator, with the input field enabled and no prior error banner shown."
+        },
+        {
+          "step": 2,
+          "action": "In the prompt field, enter: \"Show warranty claim counts by dealer for Q1 2024 using approved reporting data\".",
+          "expectedResult": "The full prompt text is accepted in the input field without validation error and the \"Generate Query\" action remains available."
+        },
+        {
+          "step": 3,
+          "action": "Click the \"Generate Query\" button.",
+          "expectedResult": "The system interprets the request and displays generated SQL that uses only approved PostgreSQL objects and read-only syntax, such as a SELECT against reporting.vehicle_warranty_summary and/or reporting.dealer_dimension, with no INSERT, UPDATE, DELETE, ALTER, DROP, CREATE, TRUNCATE, or function calls that modify data."
+        },
+        {
+          "step": 4,
+          "action": "Review the displayed interpreted intent and generated SQL, then click the \"Run Query\" button.",
+          "expectedResult": "The platform performs governance validation before execution, confirms the query is authorized and read-only, and executes it without security warnings or policy violations."
+        },
+        {
+          "step": 5,
+          "action": "Observe the returned results in the results grid.",
+          "expectedResult": "A results set is displayed showing dealer-level warranty claim counts for Q1 2024 only, with rows populated from approved reporting data and no unauthorized columns present."
+        },
+        {
+          "step": 6,
+          "action": "Open the query details or execution details panel associated with the completed request.",
+          "expectedResult": "The panel shows the natural-language prompt, interpreted intent, generated SQL, access decision marked as allowed, and execution outcome marked as success."
+        },
+        {
+          "step": 7,
+          "action": "Navigate to the audit trail or compliance log view and search using the exact prompt text entered in step 2.",
+          "expectedResult": "A corresponding audit record exists and includes the prompt, interpreted intent, generated SQL, access decision, timestamp, requesting user, and successful execution outcome."
+        }
+      ],
+      "postconditions": [
+        "A read-only governed query execution record is persisted in the audit trail for the authenticated administrator.",
+        "No application or database data is modified because only approved read-only operations were executed.",
+        "The user remains logged in and can continue using the AI Reporting page with the completed result visible or retrievable from history."
+      ]
+    },
+    {
+      "id": "TC-FUNC-002",
+      "title": "Enforce data masking and redaction for sensitive automotive customer and vehicle fields during an authorized reporting request",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator and has access to AI Reporting.",
+        "Data governance policies are configured to mask, redact, or exclude sensitive fields such as customer_name, customer_email, vin_full, phone_number, and street_address.",
+        "Approved PostgreSQL reporting objects include a dataset containing both allowed reporting fields and sensitive automotive customer or vehicle attributes.",
+        "Test data exists for at least one dealer or vehicle report where sensitive fields would normally be present in the underlying source data."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the \"AI Reporting\" page and enter the prompt: \"Show recent vehicle service records with customer contact details and VIN for dealer D-1001\".",
+          "expectedResult": "The prompt is accepted and ready for processing."
+        },
+        {
+          "step": 2,
+          "action": "Click the \"Generate Query\" button.",
+          "expectedResult": "The system interprets the request and generates a governed SQL statement that is limited to approved reporting objects and applies policy handling for sensitive customer and vehicle data."
+        },
+        {
+          "step": 3,
+          "action": "Review the displayed SQL and selected output columns before execution.",
+          "expectedResult": "Sensitive fields are not exposed in raw form; they are either omitted entirely, replaced by masked/redacted expressions, or mapped to approved non-sensitive alternatives in accordance with configured governance policy."
+        },
+        {
+          "step": 4,
+          "action": "Click the \"Run Query\" button to execute the governed query.",
+          "expectedResult": "The query executes successfully because the request is allowed after policy enforcement, and the system does not return any policy violation message."
+        },
+        {
+          "step": 5,
+          "action": "Inspect the results grid, paying specific attention to customer identity and vehicle identifier columns.",
+          "expectedResult": "Sensitive automotive customer and vehicle data is masked, redacted, or excluded; for example, full customer contact details and full VIN are not visible in plain text, while permitted reporting fields remain readable."
+        },
+        {
+          "step": 6,
+          "action": "Open the query execution details for the completed request.",
+          "expectedResult": "The execution details indicate that the access decision was allowed with policy enforcement applied, and the final result set reflects governance controls for sensitive fields."
+        },
+        {
+          "step": 7,
+          "action": "Open the audit trail entry for this request.",
+          "expectedResult": "The audit record contains the natural-language prompt, interpreted intent, generated SQL, the access decision, and a successful execution outcome for compliance traceability."
+        }
+      ],
+      "postconditions": [
+        "The query result is available to the user with sensitive customer and vehicle fields protected according to governance policy.",
+        "An audit trail entry exists documenting the request and the successful governed execution.",
+        "No unrestricted sensitive field values were exposed or persisted in the UI result set."
+      ]
+    },
+    {
+      "id": "TC-FUNC-003",
+      "title": "Allow access only to approved schema, table, and view combinations for the administrator's role and record the authorization decision",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator with role-based access to a defined subset of approved PostgreSQL schemas, tables, and views.",
+        "At least two reporting objects are configured: one approved for this role, such as reporting.dealer_dimension, and one approved object that is outside the requested scope but still within the global approved catalog.",
+        "The AI Reporting feature displays generated SQL and execution details to the user before or after execution.",
+        "Audit logging is enabled for authorization decisions."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to the \"AI Reporting\" page and enter the prompt: \"List dealer IDs and dealer names for active dealers in the approved reporting catalog\".",
+          "expectedResult": "The prompt is accepted and the feature is ready to process it."
+        },
+        {
+          "step": 2,
+          "action": "Click the \"Generate Query\" button.",
+          "expectedResult": "The system generates SQL that references only the administrator-approved reporting object needed to satisfy the request, such as reporting.dealer_dimension, and excludes any non-requested or unauthorized objects."
+        },
+        {
+          "step": 3,
+          "action": "Verify the generated SQL in the query preview panel.",
+          "expectedResult": "The SQL contains only SELECT statements against allowed schema and object names, with no references to disallowed schemas or base tables outside the approved reporting catalog."
+        },
+        {
+          "step": 4,
+          "action": "Click the \"Run Query\" button.",
+          "expectedResult": "The platform validates role-based permissions for the referenced objects and authorizes execution because the request falls within the user's approved access scope."
+        },
+        {
+          "step": 5,
+          "action": "Review the result set returned by the query.",
+          "expectedResult": "Only dealer IDs and dealer names for active dealers are returned, confirming successful execution against approved objects."
+        },
+        {
+          "step": 6,
+          "action": "Open the execution details for the request.",
+          "expectedResult": "The details show the interpreted intent, generated SQL, access decision marked as allowed, and execution outcome marked as success."
+        },
+        {
+          "step": 7,
+          "action": "Search the audit trail using the current user's ID and the timestamp of execution.",
+          "expectedResult": "The audit trail contains a single entry for this request with the prompt, SQL, authorization decision, and successful execution outcome."
+        }
+      ],
+      "postconditions": [
+        "The governed query is executed only against role-approved PostgreSQL objects.",
+        "An audit record exists showing that access was evaluated and allowed for this role and request.",
+        "The user remains on the AI Reporting workflow with results available for compliance review."
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "id": "TC-NEGA-001",
+      "title": "Block unsafe or unauthorized SQL generation when the natural-language prompt requests write or destructive database actions",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator and can access the AI Reporting page.",
+        "Governance rules are configured to allow only approved PostgreSQL schemas, tables, views, and read-only operations.",
+        "Audit logging is enabled for denied requests and blocked executions."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the \"AI Reporting\" page and enter the prompt: \"Delete warranty claims older than 2022 and update dealer status to inactive where claim count is zero\".",
+          "expectedResult": "The prompt text is accepted in the input field because content validation occurs during processing rather than simple field entry."
+        },
+        {
+          "step": 2,
+          "action": "Click the \"Generate Query\" button.",
+          "expectedResult": "The system analyzes the prompt and identifies requested operations that are unsafe or unauthorized, including DELETE and UPDATE behavior."
+        },
+        {
+          "step": 3,
+          "action": "Observe the response in the query preview or validation area.",
+          "expectedResult": "The platform does not present an executable write-capable SQL statement; instead it shows a clear denial or policy-validation message indicating that only approved read-only reporting queries are permitted."
+        },
+        {
+          "step": 4,
+          "action": "If a \"Run Query\" button remains visible, attempt to click it.",
+          "expectedResult": "Execution is blocked before reaching the database, and the user receives a clear message that unsafe or unauthorized statements cannot be executed."
+        },
+        {
+          "step": 5,
+          "action": "Verify that no results grid with modified data is returned and no success confirmation is displayed.",
+          "expectedResult": "No query results are shown for a denied write request, and there is no indication that any data-changing statement ran."
+        },
+        {
+          "step": 6,
+          "action": "Navigate to the audit trail and search for the denied request using the exact prompt text.",
+          "expectedResult": "An audit entry exists showing the natural-language prompt, interpreted intent or denial reason, generated SQL if applicable, access decision marked as denied/blocked, and execution outcome marked as not executed or failed validation."
+        }
+      ],
+      "postconditions": [
+        "No database records are inserted, updated, or deleted.",
+        "A denied audit trail entry is persisted for compliance review.",
+        "The user remains logged in and can submit a different valid reporting request."
+      ]
+    },
+    {
+      "id": "TC-NEGA-002",
+      "title": "Deny access when a prompt attempts to retrieve sensitive customer or vehicle data outside allowed governance policy",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated and has access to AI Reporting, but governance policy prohibits exposure of unrestricted PII and full vehicle identifiers.",
+        "Sensitive fields such as full customer email, full phone number, full street address, and full VIN exist in the underlying source data but are not approved for raw reporting output.",
+        "Audit logging is enabled for denied access decisions."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the \"AI Reporting\" page and enter the prompt: \"Show full customer names, full email addresses, home addresses, phone numbers, and complete VINs for all vehicles serviced last month\".",
+          "expectedResult": "The prompt is accepted in the input field and is ready for policy evaluation."
+        },
+        {
+          "step": 2,
+          "action": "Click the \"Generate Query\" button.",
+          "expectedResult": "The system interprets the intent and recognizes that the requested output includes sensitive automotive customer and vehicle fields that are not allowed to be returned in unrestricted form."
+        },
+        {
+          "step": 3,
+          "action": "Review the system response before execution.",
+          "expectedResult": "The platform either denies the request outright or revises the candidate query so that prohibited sensitive fields are excluded; if the request cannot be fulfilled within policy, a clear denial message is displayed."
+        },
+        {
+          "step": 4,
+          "action": "Attempt to proceed with execution if the interface allows any continuation action.",
+          "expectedResult": "The system blocks execution for prohibited raw sensitive data access and does not return unmasked customer or vehicle data."
+        },
+        {
+          "step": 5,
+          "action": "Inspect the UI for any returned columns or preview text related to customer identity and VIN values.",
+          "expectedResult": "No unrestricted sensitive values are displayed anywhere in the query preview, result grid, or confirmation message."
+        },
+        {
+          "step": 6,
+          "action": "Open the audit trail and locate the request using the current timestamp.",
+          "expectedResult": "The audit entry shows the prompt, interpreted intent, access decision marked as denied or policy-restricted, and execution outcome indicating blocked or not executed."
+        }
+      ],
+      "postconditions": [
+        "No unrestricted sensitive customer or vehicle data is displayed to the user.",
+        "A policy-based denial or restriction is captured in the audit trail.",
+        "The application remains available for the user to submit a compliant reporting request."
+      ]
+    },
+    {
+      "id": "TC-NEGA-003",
+      "title": "Validate required input by preventing processing when the natural-language prompt is blank or contains only whitespace",
+      "category": "Negative",
+      "priority": "Medium",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator and is on the AI Reporting page.",
+        "The natural-language prompt field is empty at the start of the test.",
+        "Client-side or server-side validation for required input is configured for the reporting request workflow."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Place the cursor in the natural-language prompt field and leave it blank, then click the \"Generate Query\" button.",
+          "expectedResult": "The system blocks submission and displays a required-field validation message indicating that a prompt must be entered before processing can continue."
+        },
+        {
+          "step": 2,
+          "action": "Clear any existing text if needed, enter five blank spaces into the prompt field, and click the \"Generate Query\" button again.",
+          "expectedResult": "Whitespace-only input is treated as empty and the same required-field validation is shown."
+        },
+        {
+          "step": 3,
+          "action": "Check whether any SQL preview, interpreted intent, or execution options are displayed after the invalid submissions.",
+          "expectedResult": "No interpreted intent, generated SQL, or executable query controls are produced for blank or whitespace-only input."
+        },
+        {
+          "step": 4,
+          "action": "Inspect the prompt field styling and associated validation text.",
+          "expectedResult": "The prompt field is clearly marked as invalid and the validation message is placed near the field in a way that the user can correct the input."
+        },
+        {
+          "step": 5,
+          "action": "Refresh or reopen the page history section if available and verify whether a request entry was created.",
+          "expectedResult": "No reporting request is submitted for processing and no audit or history entry is created for the blocked validation attempt."
+        }
+      ],
+      "postconditions": [
+        "No query generation or execution occurs for blank or whitespace-only input.",
+        "No audit entry for a processed reporting request is created because validation stopped the workflow before submission.",
+        "The user remains on the AI Reporting page with the prompt field ready for valid input."
+      ]
+    }
+  ],
+  "edgeCases": [
+    {
+      "id": "TC-EDGE-001",
+      "title": "Validate governed execution with an empty-result but valid natural-language query against approved read-only PostgreSQL objects",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated in the AI Reporting Platform UI as a Data Governance Administrator with access to the natural-language reporting page",
+        "Approved PostgreSQL schema, tables, and views are configured for governed reporting, and read-only SELECT operations are allowed",
+        "Test data exists such that no records match the query condition for model year 2099 in the approved vehicle reporting view",
+        "Audit logging is enabled and accessible for compliance review in the application audit trail screen or API"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to the natural-language reporting page and confirm the prompt input, 'Generate Query' control, results area, and audit or execution status section are visible.",
+          "expectedResult": "The governed reporting page loads successfully for the authenticated administrator and the feature is available for input."
+        },
+        {
+          "step": 2,
+          "action": "Enter the prompt: 'Show vehicle warranty claims for model year 2099 by dealer, including claim count and total claim amount.'",
+          "expectedResult": "The full prompt is accepted by the input control without client-side validation errors because the required field is populated."
+        },
+        {
+          "step": 3,
+          "action": "Submit the request using the primary action button such as 'Generate Query' or 'Run Report'.",
+          "expectedResult": "The system interprets the request and generates SQL limited to approved PostgreSQL schemas, approved reporting objects, and read-only operations only."
+        },
+        {
+          "step": 4,
+          "action": "Review the generated SQL or execution summary shown in the UI.",
+          "expectedResult": "No unsafe statements such as INSERT, UPDATE, DELETE, DROP, ALTER, COPY, EXECUTE, or cross-schema access outside approved objects appear; the access decision shows allowed."
+        },
+        {
+          "step": 5,
+          "action": "Allow the system to execute the governed query and wait for the results section to render.",
+          "expectedResult": "Execution completes successfully with a clear empty-state result such as '0 records found' or equivalent, rather than a system error or malformed response."
+        },
+        {
+          "step": 6,
+          "action": "Verify that the results page still displays column headers or a valid empty-state message appropriate for the requested report.",
+          "expectedResult": "The UI presents a compliant no-data response, and the user can understand that the query was valid but returned no matching records."
+        },
+        {
+          "step": 7,
+          "action": "Open the corresponding audit trail entry for the just-submitted request.",
+          "expectedResult": "The audit trail contains the natural-language prompt, interpreted intent, generated SQL, access decision of allowed, and execution outcome indicating successful execution with zero rows returned."
+        }
+      ],
+      "postconditions": [
+        "No database records are modified because only approved read-only operations were executed",
+        "An audit record exists for the prompt, interpreted intent, generated SQL, access decision, and successful zero-result execution outcome",
+        "The user remains logged in on the reporting page with the completed request visible for review"
+      ]
+    },
+    {
+      "id": "TC-EDGE-002",
+      "title": "Validate governed handling of a long prompt containing special characters and Unicode while preserving read-only constraints and sensitive-field protection",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator and has access to the natural-language reporting UI",
+        "Approved reporting objects include dealer, vehicle, and warranty reporting views with sensitive customer and vehicle fields configured for masking, redaction, or exclusion per governance policy",
+        "The environment supports Unicode input in the prompt field and the application audit trail stores request metadata",
+        "Known test data exists for dealers in regions including names with accented characters so that a valid result can be returned"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the natural-language reporting page and verify the prompt text area is enabled.",
+          "expectedResult": "The page is ready to accept a natural-language request."
+        },
+        {
+          "step": 2,
+          "action": "Paste this prompt into the prompt field: 'For dealer region \"Québec\", show read-only reporting for 2024 vehicle warranty claims by dealer and model. Exclude direct personal identifiers, but include masked customer reference if policy allows. Also summarize totals. Characters check: é ñ ü — / % ? &'.",
+          "expectedResult": "The prompt field accepts the full long text including quotes, accented characters, punctuation, em dash, slash, percent sign, question mark, and ampersand without truncation or UI corruption."
+        },
+        {
+          "step": 3,
+          "action": "Submit the request using the page's primary execution control.",
+          "expectedResult": "The system validates the required input, interprets intent successfully, and does not reject the request solely because of valid Unicode or special characters."
+        },
+        {
+          "step": 4,
+          "action": "Inspect the generated SQL, SQL preview, or execution details presented by the UI.",
+          "expectedResult": "The SQL is constrained to approved PostgreSQL schemas, tables, or views and read-only operations only; no unsafe or unauthorized statements are present."
+        },
+        {
+          "step": 5,
+          "action": "Review the returned result set for any customer or vehicle fields included by the system.",
+          "expectedResult": "Sensitive automotive customer and vehicle data is masked, redacted, or excluded according to configured GDPR, CCPA, and internal governance rules; unrestricted sensitive values are not exposed."
+        },
+        {
+          "step": 6,
+          "action": "Confirm the displayed region or filter values preserve the intended Unicode text, such as 'Québec', in the result summary, filter chips, or execution details.",
+          "expectedResult": "Unicode characters display correctly in the UI and there is no mojibake, encoding loss, or substituted characters."
+        },
+        {
+          "step": 7,
+          "action": "Open the audit trail entry for this request.",
+          "expectedResult": "The audit trail records the natural-language prompt with special characters preserved, the interpreted intent, the generated SQL, the access decision, and the execution outcome for traceability."
+        }
+      ],
+      "postconditions": [
+        "A governed read-only query execution is recorded with the original prompt and outcome in the audit trail",
+        "No unauthorized schema access or data modification occurs",
+        "Any sensitive fields returned in the UI remain masked, redacted, or excluded in accordance with policy"
+      ]
+    }
+  ],
+  "accessibility": [
+    {
+      "id": "TC-ACCE-001",
+      "title": "Verify full keyboard-only completion of the governed reporting happy path including focus order, actionability, and result access",
+      "category": "Accessibility",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator and starts on the AI Reporting Platform landing page",
+        "Natural-language reporting UI is available in a supported desktop browser with keyboard input only; mouse or trackpad is not used during the test",
+        "A valid approved reporting prompt is prepared: 'Show total 2024 warranty claims by dealer from approved reporting views.'",
+        "At least one matching record exists so the results grid or result summary renders after execution"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Using only the keyboard, navigate from the landing page to the natural-language reporting feature via Tab, Shift+Tab, Enter, and arrow keys as applicable.",
+          "expectedResult": "Interactive elements receive focus in a logical order, the current focus indicator is clearly visible, and the reporting page can be opened without requiring a mouse."
+        },
+        {
+          "step": 2,
+          "action": "Continue using Tab navigation to move to the prompt input field and enter: 'Show total 2024 warranty claims by dealer from approved reporting views.'",
+          "expectedResult": "The prompt field is reachable, keyboard-operable, and accepts text entry without trapping focus."
+        },
+        {
+          "step": 3,
+          "action": "Tab to the primary action control such as 'Generate Query' or 'Run Report' and activate it with Enter or Space.",
+          "expectedResult": "The button is operable by keyboard and triggers processing of the request."
+        },
+        {
+          "step": 4,
+          "action": "While processing occurs, observe focus behavior and status messaging without using a mouse.",
+          "expectedResult": "Focus remains logical and visible; it does not jump unexpectedly to the browser chrome or disappear, and any loading or status message is perceivable in the interface."
+        },
+        {
+          "step": 5,
+          "action": "After processing completes, use keyboard navigation to move through the generated SQL preview, execution status, and results section.",
+          "expectedResult": "All major post-submission content areas are reachable by keyboard, and the user can review allowed execution details and returned results without a mouse."
+        },
+        {
+          "step": 6,
+          "action": "Navigate to any audit or execution-details link or expandable section for the request and open it using the keyboard.",
+          "expectedResult": "The control is keyboard accessible, opens successfully, and exposes traceability details for the executed request."
+        },
+        {
+          "step": 7,
+          "action": "Use Shift+Tab and Tab to verify backward and forward navigation around the results and action controls before ending the test.",
+          "expectedResult": "Focus order remains consistent and no keyboard trap is encountered anywhere in the core flow."
+        }
+      ],
+      "postconditions": [
+        "The governed reporting happy path can be completed end-to-end using only the keyboard",
+        "The executed request remains available in the UI with results and execution details accessible",
+        "No unintended changes are made beyond the normal read-only query execution and audit logging"
+      ]
+    },
+    {
+      "id": "TC-ACCE-002",
+      "title": "Verify screen-reader compatible labels, status announcements, and audit/result comprehension for governed query submission",
+      "category": "Accessibility",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator",
+        "A screen reader is active in a supported browser, such as NVDA with Chrome or JAWS with Edge",
+        "Natural-language reporting page is open and a valid prompt is available: 'Show 2024 dealer-level vehicle warranty claim totals from approved views only.'",
+        "Audit logging is enabled and the UI exposes execution status and result sections after submission"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "With the screen reader running, move through the natural-language reporting page by landmarks, headings, and form controls.",
+          "expectedResult": "The page exposes meaningful landmarks or headings for the reporting feature, and the screen reader can identify the main content area and the reporting form."
+        },
+        {
+          "step": 2,
+          "action": "Focus the prompt input field and listen to the announced name, role, and any helper or required-state text.",
+          "expectedResult": "The prompt field has an accessible label that clearly identifies its purpose, and any required status or instructions are announced to the user."
+        },
+        {
+          "step": 3,
+          "action": "Enter the valid prompt and navigate to the primary action control to submit it.",
+          "expectedResult": "The action control is announced with a meaningful accessible name such as 'Generate Query' or 'Run Report' and can be activated with the screen reader keyboard commands."
+        },
+        {
+          "step": 4,
+          "action": "After submission, listen for announcements related to processing, access decision, and completion.",
+          "expectedResult": "Dynamic status updates are announced through accessible mechanisms such as live regions or focus-managed messages so the user is informed that the request is processing and then completed."
+        },
+        {
+          "step": 5,
+          "action": "Move to the generated SQL or execution summary area and then to the results section using screen-reader navigation commands.",
+          "expectedResult": "The screen reader can identify these sections with meaningful labels or headings, and the user can understand whether the query was allowed and what the outcome was."
+        },
+        {
+          "step": 6,
+          "action": "Open the audit or execution-details section for the submitted request and review the announced content.",
+          "expectedResult": "The audit-related content is readable by the screen reader and includes understandable labels for prompt, interpreted intent, SQL, access decision, and execution outcome."
+        },
+        {
+          "step": 7,
+          "action": "If masked or redacted fields are present in results, listen to how those values are announced.",
+          "expectedResult": "Masked, redacted, or excluded sensitive fields are conveyed in a way that is understandable to assistive technology users and do not expose unmasked restricted data."
+        }
+      ],
+      "postconditions": [
+        "The governed query submission flow is understandable and operable for a screen-reader user",
+        "Status, results, and audit details for the executed request are programmatically exposed and reviewable",
+        "Sensitive data protections remain enforced in both visual UI and assistive-technology output"
+      ]
+    },
+    {
+      "id": "TC-ACCE-003",
+      "title": "Verify readability and operability of the reporting flow at 200% zoom and with visible contrast on key controls, status messages, and masked-result content",
+      "category": "Accessibility",
+      "priority": "Medium",
+      "preconditions": [
+        "User is authenticated as a Data Governance Administrator in a supported desktop browser",
+        "Browser zoom can be set to 200% without changing application code or browser accessibility defaults",
+        "Natural-language reporting page contains the prompt field, primary submit control, status or alert area, and a results section after execution",
+        "A valid prompt is available that returns at least one result containing governed output where sensitive fields are masked, redacted, or excluded"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Set the browser zoom level to 200% and open the natural-language reporting page.",
+          "expectedResult": "The page remains usable without horizontal scrolling for the main interaction flow where the viewport and layout permit responsive behavior, and core controls remain visible and identifiable."
+        },
+        {
+          "step": 2,
+          "action": "Inspect the prompt field label, text area, and primary action button at 200% zoom.",
+          "expectedResult": "Text remains readable, labels stay associated with controls, and the controls do not overlap, truncate critical text, or become unusable."
+        },
+        {
+          "step": 3,
+          "action": "Enter the prompt: 'Show 2024 warranty claims by dealer from approved views only.' and submit the request.",
+          "expectedResult": "The input and submit controls remain operable at 200% zoom and the request processes normally."
+        },
+        {
+          "step": 4,
+          "action": "Review any loading, success, warning, or access-decision message that appears after submission.",
+          "expectedResult": "Status text is readable, visually distinguishable from the background, and not conveyed by color alone; the user can determine whether the request was allowed and completed."
+        },
+        {
+          "step": 5,
+          "action": "Review the results section, including any masked or redacted values and any column headings.",
+          "expectedResult": "Result text, headings, and masked-value indicators remain legible and distinguishable at 200% zoom, and content is not clipped or hidden in a way that blocks understanding."
+        },
+        {
+          "step": 6,
+          "action": "Navigate to the audit or execution-details section while staying at 200% zoom.",
+          "expectedResult": "Links, buttons, and text in the traceability area remain readable and operable, and the user can access the request details without loss of functionality."
+        }
+      ],
+      "postconditions": [
+        "The core governed-reporting flow remains readable and operable at 200% zoom",
+        "Critical status, results, and audit information remain visible and understandable without relying on color alone",
+        "The executed request and its audit details persist normally after the accessibility check"
+      ]
+    }
+  ],
+  "selectedTypes": {
+    "functional": true,
+    "edgeCases": true,
+    "negative": true,
+    "accessibility": true,
+    "performance": false,
+    "security": false,
+    "usability": false,
+    "reliability": false
+  },
+  "userStoryObject": {
+    "id": "ado-3422",
+    "title": "As a Data Governance Administrator, I want LLM-generated reporting queries constrained by approved PostgreSQL rules so that sensitive automotive data is protected during AI-assisted reporting",
+    "description": "<div><strong>CONTEXT &amp; BACKGROUND:</strong><br><br>Natural-language reporting must be governed because the platform may access sensitive automotive customer, vehicle, warranty, supplier, or dealer information stored in PostgreSQL. This story covers the guardrails that ensure LLM-driven interpretation and downstream SQL processing remain read-only, authorized, and compliant.<br><br><strong>CURRENT STATE:</strong><br><br>Manual or incomplete process today.<br><br><strong>DESIRED STATE:</strong><br><br>System supports the capability end-to-end.<br><br><strong>KEY FUNCTIONALITY:</strong><br><br><div>• Implement core logic and validation </div><br/><div>• Expose API and UI </div><br/><div>• Handle errors and edge cases </div><br/><div>• Ensure data persistence and retrieval </div><br><br><strong>USER INTERACTION FLOW:</strong><br><br><div>1. User accesses the feature </div><br/><div>2. User performs the required action </div><br/><div>3. System processes the request </div><br/><div>4. System displays results or confirmation </div><br/><div>5. User verifies the outcome </div><br><br><strong>TECHNICAL CONSIDERATIONS:</strong><br><br><div>• Data source: application database </div><br/><div>• Security: authentication and input validation </div><br/><div>• Performance: meet SLA requirements </div><br><br><strong>OUT OF SCOPE:</strong><br><br><div>• Advanced customization (future story) </div><br><br><strong>SUCCESS METRICS:</strong><br><br><div>• Feature works per acceptance criteria </div><br/><div>• No critical defects in production </div> </div><br><div><strong>Persona:</strong> Data Governance Administrator (Data Governance Administrator) </div>",
+    "acceptanceCriteria": "<div>1. Platform constrains LLM-driven query generation to approved PostgreSQL schemas, tables, views, and read-only operations and blocks unsafe or unauthorized statements before execution </div><br/><div>2. Platform enforces role-based access controls and masks, redacts, or excludes sensitive automotive customer and vehicle fields in accordance with GDPR, CCPA, and internal data-governance policies </div><br/><div>3. Platform records the natural-language prompt, interpreted intent, generated SQL, access decision, and execution outcome in an audit trail that supports traceability and compliance review </div><br/><div>4. User can I want LLM-generated reporting queries constrained by approved PostgreSQL rules so that sensitive automotive data is protected during AI-assisted reporting through the documented happy-path flow </div><br/><div>5. System validates required inputs before completing &quot;I want LLM-generated reporting queries constrained by approved PostgreSQL rules so that sensitive automotive data is protected during AI-assisted reporting&quot; </div>",
+    "adoWorkItemId": 3422,
+    "state": "New",
+    "assignedTo": "Unassigned",
+    "createdDate": "2026-09-23T11:29:21.99Z",
+    "priority": 2,
+    "storyPoints": 5,
+    "tags": "devx-brd-c19a882c-c19a-4690-9af6-b76b273bf4d1",
+    "brdId": "c19a882c-c19a-4690-9af6-b76b273bf4d1",
+    "epicId": "epic-3376",
+    "featureId": "feature-3386",
+    "source": "ado",
+    "adoUrl": "https://dev.azure.com/delta-studio/8f843efc-0511-4050-adaf-8ffa27fbac9f/_workitems/edit/3422"
+  }
+}
