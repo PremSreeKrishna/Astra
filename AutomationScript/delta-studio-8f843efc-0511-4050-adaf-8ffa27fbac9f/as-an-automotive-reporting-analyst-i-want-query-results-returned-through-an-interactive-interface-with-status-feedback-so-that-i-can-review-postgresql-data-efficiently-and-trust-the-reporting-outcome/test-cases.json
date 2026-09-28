@@ -1,0 +1,3253 @@
+{
+  "storyId": "ado-3425",
+  "storyTitle": "As an Automotive Reporting Analyst, I want query results returned through an interactive interface with status feedback so that I can review PostgreSQL data efficiently and trust the reporting outcome",
+  "testCases": [],
+  "functional": [
+    {
+      "id": "TC-FUNC-001",
+      "title": "Approved reporting request shows progressing execution states and then renders complete interactive PostgreSQL results with linked query context",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "User is logged in with the Automotive Reporting Analyst role and is authorized for the automotive reporting domain tied to request ID 'REQ-POSTGRES-1001'.",
+        "An approved interpreted request with request ID 'REQ-POSTGRES-1001' exists in the AI query workflow and is configured to return a successful PostgreSQL result set with columns DealerName, VehicleVIN, WarrantyStatus, ClaimCount.",
+        "The governed query service is available and returns execution metadata including executionStatus, requestId, rowCount, columns, rows, and queryContext for the request.",
+        "The test environment supports network timing observation so the tester can verify that a visible status update or final results appear within 10 seconds under normal load."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "From the approved requests list, locate request ID 'REQ-POSTGRES-1001' and click the 'Open Results' action.",
+          "expectedResult": "The application opens a single results experience for request 'REQ-POSTGRES-1001' and displays an initial processing state instead of a blank page or editable SQL interface."
+        },
+        {
+          "step": 2,
+          "action": "Observe the results header and timing from the moment the results view opens for up to 10 seconds.",
+          "expectedResult": "Within 10 seconds, the interface shows a visible execution state such as 'Queued' or 'Running', or directly shows the final results if execution completes faster."
+        },
+        {
+          "step": 3,
+          "action": "Remain on the same results page without clicking any resubmit or refresh control and watch the status area until the request completes.",
+          "expectedResult": "The execution state updates in place from processing to 'Queued' and/or 'Running' and then to 'Completed' without requiring the user to resubmit the request and without opening a second request."
+        },
+        {
+          "step": 4,
+          "action": "After status changes to 'Completed', review the rendered results grid.",
+          "expectedResult": "A tabular results view appears showing column headers DealerName, VehicleVIN, WarrantyStatus, ClaimCount and returned row data; the interface also displays the request ID and a row count matching the result payload."
+        },
+        {
+          "step": 5,
+          "action": "In the completed results view, locate the query context section or expandable panel.",
+          "expectedResult": "The query context ties the displayed output to the executed SQL text or approved SQL summary and identifies the related PostgreSQL source objects such as schema and table/view names used for the request."
+        },
+        {
+          "step": 6,
+          "action": "Inspect the page for restricted controls and sensitive backend information.",
+          "expectedResult": "No direct SQL editing controls, unrestricted database access options, raw database credentials, connection strings, usernames, passwords, or host details are shown anywhere in the UI."
+        },
+        {
+          "step": 7,
+          "action": "Verify the final state by checking that the request summary, execution status, row count, and query context all remain visible together on the same page.",
+          "expectedResult": "The completed request remains stable in the interactive results experience with status 'Completed', correct row data, request metadata, and linked query context all visible and internally consistent."
+        }
+      ],
+      "postconditions": [
+        "Request 'REQ-POSTGRES-1001' remains recorded as completed in the platform with its associated requestId, execution status, row count, and query context available for review.",
+        "The user remains authenticated and stays on the interactive results page for the approved request.",
+        "No duplicate execution is created as a result of status updates occurring in the same interface."
+      ]
+    },
+    {
+      "id": "TC-FUNC-002",
+      "title": "Completed results support efficient analyst review through sortable tabular output while preserving request-level metadata and result linkage",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "User is logged in as an Automotive Reporting Analyst with access to approved request ID 'REQ-POSTGRES-1002'.",
+        "Request 'REQ-POSTGRES-1002' has already completed successfully and returns at least 5 rows with mixed values in columns DealerName, ServiceDate, ClaimAmount, and VehicleVIN so sorting changes are observable.",
+        "The completed payload includes requestId, executionStatus 'Completed', rowCount, columns, rows, and queryContext."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the results view for approved request ID 'REQ-POSTGRES-1002'.",
+          "expectedResult": "The page loads directly into a completed interactive results view showing the request ID, execution status 'Completed', row count, and the tabular dataset."
+        },
+        {
+          "step": 2,
+          "action": "Review the initial table content and note the first three values shown under the 'ClaimAmount' column.",
+          "expectedResult": "The table displays valid row data with readable column headings and enough rows to evaluate sorting behavior."
+        },
+        {
+          "step": 3,
+          "action": "Click the 'ClaimAmount' column header once.",
+          "expectedResult": "The table sorts the rows in one direction based on ClaimAmount values, and the ordering of the first rows changes accordingly while the same request ID and row count remain displayed."
+        },
+        {
+          "step": 4,
+          "action": "Click the 'ClaimAmount' column header a second time.",
+          "expectedResult": "The table reverses the sort order for ClaimAmount, proving the output is interactive and sortable without re-running the request."
+        },
+        {
+          "step": 5,
+          "action": "Click the 'DealerName' column header.",
+          "expectedResult": "The table sorts by DealerName, allowing a different review path while preserving the completed request state and the same dataset size."
+        },
+        {
+          "step": 6,
+          "action": "Open or review the query context panel after sorting.",
+          "expectedResult": "The executed SQL text or summary and source schema/table/view references remain tied to the same request and are not lost or changed by table sorting."
+        },
+        {
+          "step": 7,
+          "action": "Confirm the final state of the page after multiple sorts.",
+          "expectedResult": "The analyst can continue reviewing returned rows efficiently in the same results experience, with stable request metadata, completed status, and unchanged row count after all sorting actions."
+        }
+      ],
+      "postconditions": [
+        "The completed result set for 'REQ-POSTGRES-1002' remains available and unchanged except for client-side sort order in the UI.",
+        "Request-level metadata and query context remain associated with the displayed rows throughout the review session.",
+        "No new execution or duplicate request submission is triggered by sorting interactions."
+      ]
+    },
+    {
+      "id": "TC-FUNC-003",
+      "title": "Opening an approved request already in progress updates status in place to completed without duplicate submission or manual resubmission",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "User is logged in as an Automotive Reporting Analyst with authorization to view request ID 'REQ-POSTGRES-1003'.",
+        "Approved request 'REQ-POSTGRES-1003' exists and is currently in an in-progress execution state in the governed query service, expected to move from 'Queued' to 'Running' and then 'Completed' during the test.",
+        "The results interface uses polling or push updates configured for normal operation."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to the approved request list and open request ID 'REQ-POSTGRES-1003' by clicking 'Open Results'.",
+          "expectedResult": "The results page opens and shows the current in-progress state for the request rather than displaying stale final data."
+        },
+        {
+          "step": 2,
+          "action": "Observe the request state area for the first update cycle without clicking any retry, submit, or browser refresh control.",
+          "expectedResult": "The visible status shows 'Queued' or 'Running' and includes the same request ID 'REQ-POSTGRES-1003'."
+        },
+        {
+          "step": 3,
+          "action": "Continue watching the same page until the next backend status transition occurs.",
+          "expectedResult": "The execution state updates in place to the next valid state and does not require the analyst to resubmit the request to see progress."
+        },
+        {
+          "step": 4,
+          "action": "Allow the request to complete naturally and watch the interface transition.",
+          "expectedResult": "When the backend reports completion, the status area is replaced by the final interactive results view on the same page."
+        },
+        {
+          "step": 5,
+          "action": "Verify the browser page, request header, and dataset after completion.",
+          "expectedResult": "Only one request ID is shown, the execution status is 'Completed', and one consistent result set is displayed with no indication that a second execution was created."
+        },
+        {
+          "step": 6,
+          "action": "Review the metadata section for execution details such as duration and row count if displayed.",
+          "expectedResult": "Request-level execution details are visible and tied to the same request that progressed through in-place status updates."
+        }
+      ],
+      "postconditions": [
+        "Request 'REQ-POSTGRES-1003' is completed and visible in the interactive results interface.",
+        "The user session remains active on the same results page with no duplicate request submitted.",
+        "The status progression is reflected for auditability through the same request identifier."
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "id": "TC-NEGA-001",
+      "title": "Unauthorized or invalid request access is blocked for results retrieval and no protected PostgreSQL output is exposed",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "Two request IDs are available for testing: 'REQ-POSTGRES-2001' is valid but belongs to a different reporting domain than the logged-in user is authorized to access, and 'REQ-POSTGRES-XXXX' is a non-existent or invalid request ID.",
+        "User is logged in as an authenticated Automotive Reporting Analyst whose RBAC permissions do not include the domain for 'REQ-POSTGRES-2001'.",
+        "The application supports direct navigation to the results route or opening results from the request list."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Attempt to open the results page directly for request ID 'REQ-POSTGRES-2001' using the application route or UI action.",
+          "expectedResult": "Access to the results is denied; the user does not see tabular query data, executed SQL details, or source object information for the unauthorized request."
+        },
+        {
+          "step": 2,
+          "action": "Review the message presented after the unauthorized access attempt.",
+          "expectedResult": "The interface shows a user-safe access or authorization message and does not reveal sensitive implementation details, database credentials, or raw backend errors."
+        },
+        {
+          "step": 3,
+          "action": "Now attempt to open the results page for invalid request ID 'REQ-POSTGRES-XXXX'.",
+          "expectedResult": "The application rejects the request as invalid or not found and does not render a completed results view."
+        },
+        {
+          "step": 4,
+          "action": "Inspect the page state and any metadata shown after the invalid request attempt.",
+          "expectedResult": "No rows, no misleading final status, and no query context are displayed for the invalid request; any message is non-technical and appropriate for a missing or invalid request."
+        },
+        {
+          "step": 5,
+          "action": "Return to the approved requests list or previous page.",
+          "expectedResult": "The user remains logged in and can continue normal authorized work without having gained access to unauthorized or invalid request data."
+        }
+      ],
+      "postconditions": [
+        "No PostgreSQL result rows or protected query context are disclosed for either the unauthorized or invalid request.",
+        "The user session remains authenticated but constrained by RBAC permissions.",
+        "No execution is triggered for the unauthorized or invalid request IDs."
+      ]
+    },
+    {
+      "id": "TC-NEGA-002",
+      "title": "Failed query execution shows clear non-technical failure messaging with request identifier and suppresses incomplete final results",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "User is logged in as an Automotive Reporting Analyst authorized to access approved request ID 'REQ-POSTGRES-2002'.",
+        "Approved request 'REQ-POSTGRES-2002' is configured in the test environment to fail during PostgreSQL execution and return executionStatus 'Failed' with a requestId and failure code from the governed query service.",
+        "No previously cached completed results exist for 'REQ-POSTGRES-2002' in the test browser session."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the results view for approved request ID 'REQ-POSTGRES-2002'.",
+          "expectedResult": "The page opens into a processing or in-progress state associated with request 'REQ-POSTGRES-2002'."
+        },
+        {
+          "step": 2,
+          "action": "Wait for the execution outcome to be returned by the service without refreshing or resubmitting the request.",
+          "expectedResult": "The visible state transitions to 'Failed' within the same interface when the backend reports failure."
+        },
+        {
+          "step": 3,
+          "action": "Read the message shown in the status or error area.",
+          "expectedResult": "A clear, non-technical failure message is shown along with the request identifier 'REQ-POSTGRES-2002'; the wording does not expose stack traces, SQL engine internals, or database connection details."
+        },
+        {
+          "step": 4,
+          "action": "Inspect the main content area where results would normally appear.",
+          "expectedResult": "The interface does not display partial row data or misleading completed results as if the request succeeded."
+        },
+        {
+          "step": 5,
+          "action": "Review the page for any editable SQL control or retry behavior that could imply unrestricted database access.",
+          "expectedResult": "No direct SQL editing controls or raw database access elements are presented in the failure state."
+        },
+        {
+          "step": 6,
+          "action": "Verify the final page state after the failure message is displayed.",
+          "expectedResult": "The request remains identifiable as failed, the failure state is stable, and the analyst has enough safe context to report or troubleshoot using the request ID."
+        }
+      ],
+      "postconditions": [
+        "Request 'REQ-POSTGRES-2002' remains marked as failed and is not misrepresented as completed.",
+        "No partial or misleading final result set is shown for the failed request.",
+        "The user stays authenticated on a stable error state page containing the request identifier."
+      ]
+    },
+    {
+      "id": "TC-NEGA-003",
+      "title": "Request exceeding the normal response window continues to show delay status with request identifier and does not present incomplete output as complete",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "User is logged in as an Automotive Reporting Analyst authorized for approved request ID 'REQ-POSTGRES-2003'.",
+        "Approved request 'REQ-POSTGRES-2003' is configured to exceed the normal 10-second response window while remaining in a non-completed execution state.",
+        "The governed query service returns requestId and current executionStatus updates for the delayed request."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the results view for approved request ID 'REQ-POSTGRES-2003' and start timing from the moment the page loads.",
+          "expectedResult": "The page shows an initial processing state for the request."
+        },
+        {
+          "step": 2,
+          "action": "Observe the status area continuously through the first 10 seconds without resubmitting the request.",
+          "expectedResult": "The user receives a visible processing update such as 'Queued' or 'Running' within the response window, or equivalent delay feedback, rather than being left with no indication of activity."
+        },
+        {
+          "step": 3,
+          "action": "Continue observing after the 10-second normal response window has passed.",
+          "expectedResult": "The interface shows a clear delay or still-processing message with request ID 'REQ-POSTGRES-2003' and does not switch to a misleading 'Completed' state."
+        },
+        {
+          "step": 4,
+          "action": "Inspect the results region while the request remains delayed.",
+          "expectedResult": "No incomplete output is presented as final tabular results; if placeholders are shown, they are clearly non-final."
+        },
+        {
+          "step": 5,
+          "action": "Verify the page for safe messaging and absence of sensitive backend details.",
+          "expectedResult": "The status communication remains user-safe, with no database credentials, connection details, raw SQL errors, or technical exception traces exposed."
+        },
+        {
+          "step": 6,
+          "action": "Confirm the end state of the delayed request view without manually resubmitting.",
+          "expectedResult": "The user remains on the same request page with an accurate in-progress or delayed status and request identifier, and no duplicate submission has occurred."
+        }
+      ],
+      "postconditions": [
+        "Request 'REQ-POSTGRES-2003' remains in a non-completed state and is clearly labeled as delayed or still processing.",
+        "No final results are falsely displayed for the delayed request.",
+        "The analyst can reference the displayed request ID for follow-up without having created a duplicate execution."
+      ]
+    }
+  ],
+  "edgeCases": [
+    {
+      "id": "TC-EDGE-001",
+      "title": "Render a completed approved request that returns zero rows while preserving completed status, query context, and accurate row count",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as an Automotive Reporting Analyst with RBAC access to the target automotive reporting domain.",
+        "An approved interpreted request exists with a valid requestId that is configured to execute successfully against PostgreSQL and return zero rows.",
+        "The governed query service returns a completed payload containing requestId, executionStatus='completed', columns metadata, an empty rows array, and queryContext with executed SQL summary and source schema/table or view references.",
+        "User is on the approved request details page or workflow screen where the interactive results experience can be opened."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the approved request using its valid requestId from the AI query workflow and start the interactive results view.",
+          "expectedResult": "The results interface opens for the selected request without exposing any SQL editing control, database credential field, or unrestricted database access option."
+        },
+        {
+          "step": 2,
+          "action": "Observe the request state while the page loads and wait for the execution outcome to be retrieved.",
+          "expectedResult": "The interface shows a processing state and then transitions to a visible completed state for the same request without requiring a second submission."
+        },
+        {
+          "step": 3,
+          "action": "Review the main results panel after the request reaches completed status.",
+          "expectedResult": "The interface shows the interactive results view with column headers present, no data rows displayed, and no placeholder partial data presented as if final results exist."
+        },
+        {
+          "step": 4,
+          "action": "Verify the row count and completion indicators in the results metadata area.",
+          "expectedResult": "The UI clearly indicates zero returned rows, the execution status remains completed, and the request identifier is visible and matches the opened request."
+        },
+        {
+          "step": 5,
+          "action": "Open or expand the query context section for the completed request.",
+          "expectedResult": "The query context ties the empty result set to the executed SQL text or SQL summary and the source PostgreSQL schema/table or view references used for the request."
+        },
+        {
+          "step": 6,
+          "action": "Inspect the full page for security-related exposure.",
+          "expectedResult": "No raw database credentials, connection strings, hostnames, passwords, or direct SQL editing controls are displayed anywhere in the completed zero-row experience."
+        }
+      ],
+      "postconditions": [
+        "The request remains stored as completed for the same requestId.",
+        "No result rows are created or displayed for the request, and the UI accurately reflects a zero-row outcome.",
+        "The analyst remains on the interactive results view with request-linked query context visible or accessible.",
+        "No duplicate request execution is triggered by viewing the completed zero-row result."
+      ]
+    },
+    {
+      "id": "TC-EDGE-002",
+      "title": "Handle a successful request with a large result set by showing timely completion, stable tabular rendering, and usable sorting with full metadata",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as an Automotive Reporting Analyst with permission to view the automotive reporting request and its domain results.",
+        "An approved interpreted request exists with a valid requestId that is configured to execute successfully and return a large but supported dataset, such as 1000 or more rows across multiple columns.",
+        "The governed query service returns a valid completed payload containing columns, rows, executionStatus, requestId, and queryContext for the large result set.",
+        "Test environment is under normal operating conditions so status update or completed results should appear within the 10-second SLA."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the approved request by requestId and start the interactive results experience.",
+          "expectedResult": "The page displays an initial processing indicator tied to the selected request and does not create a duplicate submission action."
+        },
+        {
+          "step": 2,
+          "action": "Measure elapsed time from opening the request until either a visible status update or the final results appear.",
+          "expectedResult": "A processing status update or final completed results become visible within 10 seconds under normal load."
+        },
+        {
+          "step": 3,
+          "action": "When results load, review the table structure, visible rows, and page responsiveness while scrolling within the result area.",
+          "expectedResult": "The large result set renders in an interactive tabular view with readable column headers, visible rows, and no broken layout, browser freeze, or incorrect status transition."
+        },
+        {
+          "step": 4,
+          "action": "Verify the metadata area for the completed request.",
+          "expectedResult": "The interface shows completed status, the correct requestId, and a row count consistent with the returned dataset rather than an obviously truncated or misleading total."
+        },
+        {
+          "step": 5,
+          "action": "Click one sortable column header, such as 'Dealer Name' or another available text column, to sort ascending, then click the same header again to sort descending.",
+          "expectedResult": "The table reorders rows correctly in each direction, the sorted state is visually indicated, and the request remains in completed status with no accidental re-execution."
+        },
+        {
+          "step": 6,
+          "action": "Open the query context section after sorting and review its content.",
+          "expectedResult": "Executed SQL text or summary and source schema/table or view references remain available and correctly associated with the same completed large-result request."
+        }
+      ],
+      "postconditions": [
+        "The completed request remains associated with the large result set and its requestId.",
+        "The results table stays usable for analyst review after sorting, with no duplicate request submission triggered.",
+        "Query context remains linked to the same displayed results.",
+        "No database credentials or direct SQL editing controls are exposed in the interface."
+      ]
+    }
+  ],
+  "accessibility": [
+    {
+      "id": "TC-ACCE-001",
+      "title": "Verify full keyboard-only access through status, query context, and sortable results table without requiring a mouse",
+      "category": "Accessibility",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as an Automotive Reporting Analyst and has access to a valid approved request that completes successfully with at least several rows of result data.",
+        "The request returns a completed payload with columns, rows, executionStatus, requestId, and queryContext.",
+        "A desktop browser supported by the application is opened with standard keyboard navigation enabled and no mouse interaction used during the test."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Using keyboard only, navigate from the browser address bar into the interactive results page for the approved request and move focus through the page with Tab and Shift+Tab.",
+          "expectedResult": "All interactive controls in the results experience, including request navigation, query context toggle or link, and sortable column headers, are reachable in a logical focus order."
+        },
+        {
+          "step": 2,
+          "action": "Observe the focused element at each stop while tabbing through the page.",
+          "expectedResult": "A visible focus indicator is present on each interactive element, and focus is not hidden, lost, or trapped in any section of the page."
+        },
+        {
+          "step": 3,
+          "action": "Use Enter or Space on the control that opens or expands the query context section.",
+          "expectedResult": "The query context section opens or collapses using the keyboard only, and the resulting state change is visually clear without shifting focus unpredictably."
+        },
+        {
+          "step": 4,
+          "action": "Tab to a sortable table header and activate it with Enter or Space to sort the results, then activate it again to reverse the sort.",
+          "expectedResult": "The table sorts in response to keyboard activation, the sort state changes appropriately, and the interaction does not trigger a page refresh or request resubmission."
+        },
+        {
+          "step": 5,
+          "action": "Continue keyboard navigation through the results region after sorting, including moving to the next interactive control after the table header.",
+          "expectedResult": "Focus continues in a logical sequence after the sorting action and remains within the current page context, allowing the analyst to keep reviewing results."
+        },
+        {
+          "step": 6,
+          "action": "Complete the navigation flow to the end of the interactive results experience and then reverse through key controls with Shift+Tab.",
+          "expectedResult": "The entire core flow can be completed without a mouse, with no keyboard trap, no unreachable controls, and no loss of access to status, table, or query context content."
+        }
+      ],
+      "postconditions": [
+        "The request remains completed and no duplicate execution is initiated by keyboard interactions.",
+        "The final table sort state reflects the last keyboard action performed.",
+        "The user remains on the interactive results page with keyboard access preserved across status, results, and query context areas."
+      ]
+    },
+    {
+      "id": "TC-ACCE-002",
+      "title": "Verify screen reader announcements and semantic labeling for execution status changes, request identifier, query context, and results table",
+      "category": "Accessibility",
+      "priority": "High",
+      "preconditions": [
+        "User is authenticated as an Automotive Reporting Analyst and can access two approved requests: one that transitions from processing to completed and one that returns a failed or delayed outcome.",
+        "A screen reader such as NVDA, JAWS, or VoiceOver is enabled in a supported browser.",
+        "The completed request returns columns, rows, executionStatus, requestId, and queryContext; the failed or delayed request returns a user-safe message and requestId without partial final results."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the request that starts in a processing state while the screen reader is running and listen to the page announcement when the results experience loads.",
+          "expectedResult": "The screen reader announces a meaningful page title or landmark and a clearly labeled processing status for the current request rather than unlabeled dynamic content."
+        },
+        {
+          "step": 2,
+          "action": "Remain on the page until the request status changes from queued or running to completed.",
+          "expectedResult": "The updated execution state is announced to assistive technology in a timely way, and the analyst can identify that the same request has moved to completed without resubmitting."
+        },
+        {
+          "step": 3,
+          "action": "Navigate by landmarks, headings, and table commands to the completed results content.",
+          "expectedResult": "The results table is exposed semantically as a table with discernible column headers, and the request identifier is announced as labeled metadata associated with the request."
+        },
+        {
+          "step": 4,
+          "action": "Move to the query context section using screen reader navigation and read its contents.",
+          "expectedResult": "The query context control has an accessible name, its expanded or collapsed state is conveyed, and the content announces executed SQL text or summary and source object references in a readable order."
+        },
+        {
+          "step": 5,
+          "action": "Open the separate approved request that is configured to fail or exceed the normal response window.",
+          "expectedResult": "The screen reader announces a clear non-technical failure or delay message along with the request identifier, and no completed-results table is announced for that request."
+        },
+        {
+          "step": 6,
+          "action": "Review the failed or delayed view for any technical leakage in announced content.",
+          "expectedResult": "No database credentials, connection details, or low-level technical error text are exposed through the UI or screen reader output."
+        }
+      ],
+      "postconditions": [
+        "The completed request remains available with accessible status, table, and query context content.",
+        "The failed or delayed request remains associated with a user-safe message and requestId only, without partial final results.",
+        "No sensitive database connection details are exposed visually or through assistive technology."
+      ]
+    },
+    {
+      "id": "TC-ACCE-003",
+      "title": "Verify readability and operability of the results interface at 200% zoom and with adequate visual distinction for status and table content",
+      "category": "Accessibility",
+      "priority": "Medium",
+      "preconditions": [
+        "User is authenticated as an Automotive Reporting Analyst with access to an approved request that completes successfully and displays a results table with multiple columns.",
+        "A supported desktop browser is available with browser zoom controls and developer tools or contrast-check tooling available if needed.",
+        "The completed request includes visible execution status, request metadata, sortable table headers, and query context content."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the interactive results page for the completed request at 100% browser zoom and note the placement of status, request metadata, results table, and query context.",
+          "expectedResult": "All major content areas are visible and distinguishable before zoom is applied."
+        },
+        {
+          "step": 2,
+          "action": "Increase browser zoom to 200% without changing the browser window to full-screen and review the page layout.",
+          "expectedResult": "Content remains readable and functional without text overlap, clipped labels, obscured controls, or loss of access to key information such as status, requestId, and query context."
+        },
+        {
+          "step": 3,
+          "action": "At 200% zoom, navigate to the results table and inspect header labels, row values, and sortable column controls.",
+          "expectedResult": "Table headers and row content remain legible, sortable controls remain identifiable, and horizontal or vertical scrolling, if present, does not prevent use of the table."
+        },
+        {
+          "step": 4,
+          "action": "Check the visual presentation of execution status indicators such as queued, running, completed, or failed and compare text against its background.",
+          "expectedResult": "Status information is not conveyed by color alone, accompanying text labels are visible, and foreground/background contrast is sufficient for users to distinguish the state."
+        },
+        {
+          "step": 5,
+          "action": "Open the query context section and verify readability of SQL summary text and source references at 200% zoom.",
+          "expectedResult": "The query context remains readable without truncating critical information, and controls or text do not overlap when expanded."
+        },
+        {
+          "step": 6,
+          "action": "Perform one table sort action and re-check page readability after the UI updates.",
+          "expectedResult": "The updated state remains visually clear at 200% zoom, with no hidden focus, clipped sort indicator, or layout break after interaction."
+        }
+      ],
+      "postconditions": [
+        "The request remains completed and viewable at increased zoom.",
+        "The interface remains usable for reviewing status, metadata, query context, and sorted results without requiring reduced zoom.",
+        "No duplicate request execution is initiated during zoom or interaction checks."
+      ]
+    }
+  ],
+  "security": [
+    {
+      "id": "SEC-SPOOF-001",
+      "title": "Prevent access to results API with unauthenticated request",
+      "category": "security",
+      "subCategory": "STRIDE-Spoofing",
+      "priority": "Critical",
+      "description": "Verify the results and status endpoints reject requests that do not contain a valid authenticated session or bearer token, preventing identity spoofing and unauthorized retrieval of PostgreSQL reporting results.",
+      "preconditions": [
+        "Results/status API endpoint is deployed in a test environment",
+        "At least one valid approved requestId exists",
+        "User session timeout/authentication mechanism is enabled"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Send a request to fetch query status/results using a valid requestId without any authentication token or session cookie.",
+          "expectedResult": "API rejects the request with 401 Unauthorized or equivalent and returns no result data, query context, or internal details."
+        },
+        {
+          "step": 2,
+          "action": "Repeat the request with an expired session cookie.",
+          "expectedResult": "Request is rejected and client is prompted to re-authenticate; no sensitive data is disclosed."
+        },
+        {
+          "step": 3,
+          "action": "Open the interactive results UI directly via bookmarked/deep-linked request URL in a logged-out browser session.",
+          "expectedResult": "UI redirects to login or shows unauthorized state without rendering result metadata or cached content."
+        }
+      ],
+      "postconditions": [
+        "No unauthorized data is exposed",
+        "Security logs capture failed authentication attempts with request metadata"
+      ],
+      "testData": "Valid requestId; expired token/session cookie",
+      "toolsRequired": [
+        "Postman",
+        "Browser DevTools",
+        "Burp Suite"
+      ],
+      "estimatedTime": "25 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.2,
+      "complianceTag": "OWASP-A07"
+    },
+    {
+      "id": "SEC-SPOOF-002",
+      "title": "Reject forged or manipulated JWT/session token for result retrieval",
+      "category": "security",
+      "subCategory": "STRIDE-Spoofing",
+      "priority": "Critical",
+      "description": "Verify that forged, unsigned, weakly signed, or manipulated authentication tokens cannot be used to impersonate an Automotive Reporting Analyst and access result views.",
+      "preconditions": [
+        "Application uses JWT or signed session token",
+        "Test users with different roles are available",
+        "A valid requestId exists for an authorized user"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Capture a valid token for an authorized analyst account in a test environment.",
+          "expectedResult": "Token is accepted only for the legitimate session."
+        },
+        {
+          "step": 2,
+          "action": "Modify token claims such as userId, role, domain, or expiration and resend the results/status request.",
+          "expectedResult": "Server detects invalid signature/claims and rejects the request."
+        },
+        {
+          "step": 3,
+          "action": "Attempt to use an unsigned token or a token signed with an incorrect key/algorithm.",
+          "expectedResult": "Server rejects the token and records the attempt in security logs."
+        },
+        {
+          "step": 4,
+          "action": "Attempt an algorithm confusion attack if JWT is used, such as altering alg header.",
+          "expectedResult": "Server ignores manipulated header values and denies access."
+        }
+      ],
+      "postconditions": [
+        "No impersonation is possible through token manipulation",
+        "Audit/security logs contain token validation failures"
+      ],
+      "testData": "Valid JWT/session token; modified claims; unsigned token",
+      "toolsRequired": [
+        "Burp Suite",
+        "jwt.io",
+        "Postman"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 9.4,
+      "complianceTag": "OWASP-A07"
+    },
+    {
+      "id": "SEC-SPOOF-003",
+      "title": "Prevent spoofed backend status updates from rendering false completion state",
+      "category": "security",
+      "subCategory": "STRIDE-Spoofing",
+      "priority": "High",
+      "description": "Verify the UI accepts execution status transitions only from trusted backend channels and cannot be tricked into showing completed results via spoofed websocket, polling, or API responses.",
+      "preconditions": [
+        "Application uses polling or push notifications for execution status",
+        "A request can be observed in queued/running state"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Intercept status polling or push traffic while a request is in progress.",
+          "expectedResult": "Traffic format and trust boundaries are identified."
+        },
+        {
+          "step": 2,
+          "action": "Attempt to inject or replay a fake 'completed' response with fabricated rows or metadata to the browser.",
+          "expectedResult": "UI ignores tampered or untrusted responses and does not render false results."
+        },
+        {
+          "step": 3,
+          "action": "Replay an old valid completion message for a different requestId.",
+          "expectedResult": "Client/server correlation checks reject mismatched requestId/session data."
+        }
+      ],
+      "postconditions": [
+        "Only trusted server-originated status can update UI state",
+        "Replay/spoof events are logged or blocked"
+      ],
+      "testData": "In-progress requestId; captured historic completion payload",
+      "toolsRequired": [
+        "Burp Suite",
+        "Browser DevTools",
+        "WebSocket testing utility"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "Low",
+      "riskScore": 8.3,
+      "complianceTag": "OWASP-A08"
+    },
+    {
+      "id": "SEC-TAMP-001",
+      "title": "Detect tampering of requestId parameter to access or alter another analyst's result set",
+      "category": "security",
+      "subCategory": "STRIDE-Tampering",
+      "priority": "Critical",
+      "description": "Verify requestId is immutable, validated server-side, and bound to the authenticated user/domain so attackers cannot tamper with identifiers in URLs, API bodies, or client storage to fetch unauthorized results.",
+      "preconditions": [
+        "Two approved requests exist for different analysts or domains",
+        "Users have separate authorization scopes"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Log in as Analyst A and retrieve a valid requestId belonging to Analyst A.",
+          "expectedResult": "Results are accessible for Analyst A's own request."
+        },
+        {
+          "step": 2,
+          "action": "Modify the requestId in the results/status API call or browser URL to Analyst B's requestId.",
+          "expectedResult": "Server denies access with 403/404 and returns no data from Analyst B's request."
+        },
+        {
+          "step": 3,
+          "action": "Modify any hidden UI field, local storage value, or client-side state that references requestId and reload the page.",
+          "expectedResult": "Server-side authorization still prevents cross-request access; client-side tampering has no effect."
+        }
+      ],
+      "postconditions": [
+        "Cross-request tampering is blocked",
+        "Authorization/audit logs show denied access attempts"
+      ],
+      "testData": "RequestId_A authorized; RequestId_B unauthorized",
+      "toolsRequired": [
+        "Burp Suite",
+        "Browser DevTools",
+        "Postman"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.5,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-TAMP-002",
+      "title": "Prevent manipulation of executionStatus or rowCount fields in API response",
+      "category": "security",
+      "subCategory": "STRIDE-Tampering",
+      "priority": "High",
+      "description": "Verify UI and API integrity checks prevent tampered response fields such as executionStatus, rowCount, columns, or queryContext from misleading analysts or masking failure states.",
+      "preconditions": [
+        "Proxy/interception tool is configured",
+        "A result request can be observed in transit"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Intercept a valid response for a failed or running request and alter executionStatus to 'completed'.",
+          "expectedResult": "Client or server validation detects inconsistent payload and avoids rendering completed state."
+        },
+        {
+          "step": 2,
+          "action": "Alter rowCount, columns, or rows to mismatched values and forward the response.",
+          "expectedResult": "UI rejects malformed/inconsistent payload and shows safe error state instead of misleading data."
+        },
+        {
+          "step": 3,
+          "action": "Alter queryContext to reference a different schema/table than executed.",
+          "expectedResult": "Integrity validation prevents display of untrusted or inconsistent context."
+        }
+      ],
+      "postconditions": [
+        "Tampered response data is not trusted by the UI",
+        "Errors are handled without exposing raw payload details"
+      ],
+      "testData": "Captured status/result response payload",
+      "toolsRequired": [
+        "Burp Suite",
+        "Browser DevTools"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 8.1,
+      "complianceTag": "OWASP-A08"
+    },
+    {
+      "id": "SEC-TAMP-003",
+      "title": "Ensure sorting and filtering parameters cannot tamper with backend query behavior beyond approved scope",
+      "category": "security",
+      "subCategory": "STRIDE-Tampering",
+      "priority": "High",
+      "description": "Verify interactive table sort or pagination parameters are strictly allowlisted and cannot alter approved SQL semantics, target unauthorized columns, or inject query modifiers.",
+      "preconditions": [
+        "Interactive results view supports sorting/pagination",
+        "Known column names exist in the result set"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Invoke sort on a valid displayed column through the UI.",
+          "expectedResult": "Sorting works only on allowed result columns and remains within the approved request scope."
+        },
+        {
+          "step": 2,
+          "action": "Manipulate sort field parameter to a non-displayed, sensitive, or SQL fragment value via intercepted request.",
+          "expectedResult": "Server rejects unsupported values and does not alter executed query beyond the approved result handling."
+        },
+        {
+          "step": 3,
+          "action": "Manipulate pagination or ordering parameters with extreme or malformed values.",
+          "expectedResult": "Input is validated and request is safely rejected or normalized."
+        }
+      ],
+      "postconditions": [
+        "Only allowlisted result interaction parameters are accepted",
+        "No hidden data fields become exposed through tampered sort/filter input"
+      ],
+      "testData": "sort=dealer_id; sort=password; sort=1 desc --",
+      "toolsRequired": [
+        "Burp Suite",
+        "Postman"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 8.4,
+      "complianceTag": "OWASP-A03"
+    },
+    {
+      "id": "SEC-REPUD-001",
+      "title": "Audit log captures access to result view with requestId and user identity",
+      "category": "security",
+      "subCategory": "STRIDE-Repudiation",
+      "priority": "High",
+      "description": "Verify all result/status access events are logged with user identity, requestId, timestamp, action, status transition, and outcome so users cannot repudiate having viewed or attempted to access report results.",
+      "preconditions": [
+        "Audit logging is enabled",
+        "A SIEM/log viewer or secure log store is accessible to testers"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Log in as an authorized analyst and open a result view for a valid requestId.",
+          "expectedResult": "An audit entry is created with user ID, requestId, action type, timestamp, and successful outcome."
+        },
+        {
+          "step": 2,
+          "action": "Refresh the status view during queued/running/completed states.",
+          "expectedResult": "Status transition or polling accesses are logged according to design without excessive omission."
+        },
+        {
+          "step": 3,
+          "action": "Verify logs are immutable or access-controlled and not editable by the analyst.",
+          "expectedResult": "Analyst cannot alter or delete audit records."
+        }
+      ],
+      "postconditions": [
+        "Traceable audit evidence exists for result access",
+        "Logs are stored securely and protected from modification"
+      ],
+      "testData": "Authorized analyst credentials; valid requestId",
+      "toolsRequired": [
+        "SIEM/Log Viewer",
+        "Browser"
+      ],
+      "estimatedTime": "25 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-CC7"
+    },
+    {
+      "id": "SEC-REPUD-002",
+      "title": "Record denied access and suspicious token manipulation attempts",
+      "category": "security",
+      "subCategory": "STRIDE-Repudiation",
+      "priority": "High",
+      "description": "Verify failed authentication, authorization denial, and malformed token/requestId tampering attempts are captured in security logs with sufficient context for forensic investigation without exposing sensitive values.",
+      "preconditions": [
+        "Security logging is enabled",
+        "Invalid token and unauthorized requestId are available for testing"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Attempt to access results using an invalid or manipulated token.",
+          "expectedResult": "Access is denied and a security log is generated with reason code and source context."
+        },
+        {
+          "step": 2,
+          "action": "Attempt to access another user's requestId while authenticated.",
+          "expectedResult": "Authorization denial is logged with user identity, requestId, and decision outcome."
+        },
+        {
+          "step": 3,
+          "action": "Review logs to ensure raw secrets, full tokens, and PII are masked.",
+          "expectedResult": "Logs contain actionable security metadata without sensitive secret disclosure."
+        }
+      ],
+      "postconditions": [
+        "Failed access attempts are attributable",
+        "Sensitive fields are masked in logs"
+      ],
+      "testData": "Manipulated JWT; unauthorized requestId",
+      "toolsRequired": [
+        "Burp Suite",
+        "SIEM/Log Viewer"
+      ],
+      "estimatedTime": "25 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "OWASP-A09"
+    },
+    {
+      "id": "SEC-INFO-001",
+      "title": "Enforce domain-based RBAC so analysts only view authorized automotive reporting domains",
+      "category": "security",
+      "subCategory": "STRIDE-Information Disclosure",
+      "priority": "Critical",
+      "description": "Verify RBAC restricts result visibility to domains such as vehicle, dealer, warranty, or service data that the authenticated analyst is explicitly authorized to access.",
+      "preconditions": [
+        "At least two users exist with different domain permissions",
+        "Approved requests exist in separate domains"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Log in as a user authorized only for Domain A and access a Domain A request result.",
+          "expectedResult": "Result is displayed normally with permitted query context."
+        },
+        {
+          "step": 2,
+          "action": "Using the same session, request status/results for Domain B requestId.",
+          "expectedResult": "Server denies access and returns no rows, metadata, or query context for Domain B."
+        },
+        {
+          "step": 3,
+          "action": "Verify UI does not leak domain B request title, schema, row count, or source references in error states.",
+          "expectedResult": "Unauthorized domain details remain hidden."
+        }
+      ],
+      "postconditions": [
+        "Only authorized domains are visible per RBAC policy",
+        "Unauthorized domain metadata is not disclosed"
+      ],
+      "testData": "User_A with vehicle-only access; RequestId_B in warranty domain",
+      "toolsRequired": [
+        "Postman",
+        "Browser",
+        "Burp Suite"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.6,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-INFO-002",
+      "title": "Ensure API/UI never expose database connection details or internal infrastructure secrets",
+      "category": "security",
+      "subCategory": "STRIDE-Information Disclosure",
+      "priority": "Critical",
+      "description": "Verify successful, failed, and timeout responses do not expose PostgreSQL hostnames, ports, usernames, connection strings, stack traces, SQLAlchemy/driver details, or secret configuration values in API payloads, UI messages, logs visible to users, or browser storage.",
+      "preconditions": [
+        "Application can be forced into success and failure states",
+        "Browser storage inspection is available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Execute a valid request and inspect API response, UI metadata, and browser storage for infrastructure details.",
+          "expectedResult": "Only user-safe query context is shown; no connection details or secrets are exposed."
+        },
+        {
+          "step": 2,
+          "action": "Trigger a backend failure or invalid request scenario and inspect error responses/messages.",
+          "expectedResult": "Error remains generic and includes requestId/failure code only; no stack trace or DB internals are disclosed."
+        },
+        {
+          "step": 3,
+          "action": "Inspect network headers, source maps, and client logs for leaked secrets or environment values.",
+          "expectedResult": "No sensitive backend details are exposed client-side."
+        }
+      ],
+      "postconditions": [
+        "No infrastructure secrets are exposed to analysts",
+        "Errors remain user-safe and sanitized"
+      ],
+      "testData": "Valid requestId; intentionally invalid request to trigger failure",
+      "toolsRequired": [
+        "Browser DevTools",
+        "Burp Suite",
+        "Postman"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.1,
+      "complianceTag": "OWASP-A02"
+    },
+    {
+      "id": "SEC-INFO-003",
+      "title": "Prevent caching of sensitive result data in shared browsers and intermediary caches",
+      "category": "security",
+      "subCategory": "STRIDE-Information Disclosure",
+      "priority": "High",
+      "description": "Verify result pages and APIs use proper cache-control headers and client behavior to prevent sensitive reporting data from being stored in browser cache, proxy cache, or accessible after logout.",
+      "preconditions": [
+        "A valid result can be viewed in browser",
+        "Logout capability is available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "View a completed result page and inspect HTTP response headers for cache directives.",
+          "expectedResult": "Responses include no-store/no-cache/private or equivalent controls for sensitive data."
+        },
+        {
+          "step": 2,
+          "action": "Log out and use browser back button to revisit the result page.",
+          "expectedResult": "Cached results are not displayed; user is redirected to login or a blank protected state."
+        },
+        {
+          "step": 3,
+          "action": "Inspect any service worker, local storage, or session storage entries for persisted result rows.",
+          "expectedResult": "Sensitive results are not stored insecurely on the client."
+        }
+      ],
+      "postconditions": [
+        "Sensitive result data is not retrievable after logout from browser cache",
+        "Client-side storage does not retain result payloads unnecessarily"
+      ],
+      "testData": "Valid completed result page",
+      "toolsRequired": [
+        "Browser DevTools",
+        "Proxy tool"
+      ],
+      "estimatedTime": "25 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "OWASP-A02"
+    },
+    {
+      "id": "SEC-INFO-004",
+      "title": "Validate query context exposes only approved executed SQL summary and source references",
+      "category": "security",
+      "subCategory": "STRIDE-Information Disclosure",
+      "priority": "High",
+      "description": "Verify query context linked to results contains only intended explainability data and does not disclose hidden predicates, internal governance annotations, credentials, or unauthorized source objects.",
+      "preconditions": [
+        "Completed result with queryContext is available",
+        "Expected safe query context format is documented"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open a completed result and inspect displayed SQL text or summary plus schema/table/view references.",
+          "expectedResult": "Only approved executed SQL summary/text and source references are displayed in a user-safe form."
+        },
+        {
+          "step": 2,
+          "action": "Verify context does not include hidden access-control logic, secret literals, credentials, comments, or internal workflow prompts.",
+          "expectedResult": "Sensitive implementation details are omitted or masked."
+        },
+        {
+          "step": 3,
+          "action": "Attempt to retrieve expanded queryContext via API parameters or hidden UI calls.",
+          "expectedResult": "Unauthorized extra context is not returned."
+        }
+      ],
+      "postconditions": [
+        "Explainability is preserved without over-disclosure",
+        "Only approved context fields are visible"
+      ],
+      "testData": "Completed result with queryContext",
+      "toolsRequired": [
+        "Browser DevTools",
+        "Postman"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-DOS-001",
+      "title": "Rate limit repeated status polling to prevent API exhaustion",
+      "category": "security",
+      "subCategory": "STRIDE-Denial of Service",
+      "priority": "Critical",
+      "description": "Verify polling endpoints for queued/running requests enforce server-side rate limits, backoff, or abuse protections so rapid repeated requests from a client cannot exhaust backend resources or degrade service for other analysts.",
+      "preconditions": [
+        "Status endpoint is available",
+        "Load test or scripting tool is configured"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Authenticate as a valid analyst and start or identify an in-progress request.",
+          "expectedResult": "Status endpoint responds normally under baseline use."
+        },
+        {
+          "step": 2,
+          "action": "Send high-frequency status polling requests for the same requestId from one client well above expected UI cadence.",
+          "expectedResult": "Server applies throttling, 429 responses, or equivalent protections without crashing or exposing data inconsistently."
+        },
+        {
+          "step": 3,
+          "action": "Repeat from multiple parallel clients/sessions.",
+          "expectedResult": "System maintains availability and returns abuse controls while legitimate traffic remains serviceable."
+        }
+      ],
+      "postconditions": [
+        "Abusive polling is throttled",
+        "Availability protections and monitoring alerts are triggered as designed"
+      ],
+      "testData": "Single valid requestId under running state",
+      "toolsRequired": [
+        "JMeter",
+        "k6",
+        "Postman"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 8.9,
+      "complianceTag": "OWASP-A04"
+    },
+    {
+      "id": "SEC-DOS-002",
+      "title": "Protect results interface against oversized payload and pagination abuse",
+      "category": "security",
+      "subCategory": "STRIDE-Denial of Service",
+      "priority": "High",
+      "description": "Verify API rejects extreme page sizes, sort values, or malformed payloads intended to trigger excessive memory, CPU, or serialization overhead in result rendering and backend processing.",
+      "preconditions": [
+        "Results endpoint supports pagination or tabular parameters"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit result retrieval requests with extremely large pageSize/limit values and observe behavior.",
+          "expectedResult": "Server enforces maximum bounds and returns a safe validation error or capped response."
+        },
+        {
+          "step": 2,
+          "action": "Send malformed nested JSON, oversized strings, or repeated parameters to the results/status endpoint.",
+          "expectedResult": "Input is rejected quickly without significant resource degradation."
+        },
+        {
+          "step": 3,
+          "action": "Monitor API latency and error handling during the abuse attempt.",
+          "expectedResult": "Service remains stable and does not expose stack traces or partial sensitive content."
+        }
+      ],
+      "postconditions": [
+        "Resource abuse via oversized inputs is mitigated",
+        "Validation controls cap result retrieval parameters"
+      ],
+      "testData": "pageSize=1000000; oversized JSON body",
+      "toolsRequired": [
+        "Postman",
+        "Burp Suite",
+        "Load tool"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "OWASP-A04"
+    },
+    {
+      "id": "SEC-DOS-003",
+      "title": "Prevent duplicate submissions and replay from causing backend execution storms",
+      "category": "security",
+      "subCategory": "STRIDE-Denial of Service",
+      "priority": "High",
+      "description": "Verify refreshes, retries, browser double-clicks, and replayed requests do not trigger duplicate query executions or excessive backend workload for the same approved reporting request.",
+      "preconditions": [
+        "An approved reporting request can be opened/executed",
+        "Request deduplication or idempotency behavior is defined"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Trigger the same approved request multiple times rapidly via UI clicks and API replay.",
+          "expectedResult": "System reuses the existing request state or enforces idempotency rather than launching duplicate executions."
+        },
+        {
+          "step": 2,
+          "action": "Refresh the page repeatedly during queued/running state.",
+          "expectedResult": "Only status is refreshed; no duplicate execution is initiated."
+        },
+        {
+          "step": 3,
+          "action": "Inspect backend logs or monitoring for execution count tied to requestId.",
+          "expectedResult": "A single approved request results in only the intended execution count."
+        }
+      ],
+      "postconditions": [
+        "Duplicate execution storms are prevented",
+        "Logs show deduplicated handling"
+      ],
+      "testData": "Single approved requestId replayed multiple times",
+      "toolsRequired": [
+        "Browser",
+        "Burp Suite",
+        "Observability dashboard"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "OWASP-A04"
+    },
+    {
+      "id": "SEC-ELEV-001",
+      "title": "Block vertical privilege escalation from analyst to admin-only result functions",
+      "category": "security",
+      "subCategory": "STRIDE-Elevation of Privilege",
+      "priority": "Critical",
+      "description": "Verify an Automotive Reporting Analyst cannot invoke admin-only APIs, internal diagnostics, or elevated result metadata functions by modifying roles, routes, or hidden parameters.",
+      "preconditions": [
+        "Separate analyst and admin roles exist",
+        "At least one admin-only endpoint or function exists in test environment"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Authenticate as an analyst and browse the standard interactive result workflow.",
+          "expectedResult": "Only analyst-authorized functions are visible and accessible."
+        },
+        {
+          "step": 2,
+          "action": "Attempt to call admin-only result/audit/diagnostic endpoints directly using the analyst session.",
+          "expectedResult": "Server returns 403 Forbidden and no privileged data or actions are exposed."
+        },
+        {
+          "step": 3,
+          "action": "Modify role-related client parameters, headers, or token claims and retry.",
+          "expectedResult": "Server-side authorization rejects the attempt regardless of client-side changes."
+        }
+      ],
+      "postconditions": [
+        "Analyst sessions cannot access admin-only functions",
+        "Authorization denials are logged"
+      ],
+      "testData": "Analyst token; admin endpoint path",
+      "toolsRequired": [
+        "Burp Suite",
+        "Postman"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.3,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-ELEV-002",
+      "title": "Prevent unauthorized access to internal source schema or extended metadata endpoints",
+      "category": "security",
+      "subCategory": "STRIDE-Elevation of Privilege",
+      "priority": "High",
+      "description": "Verify users cannot elevate access by calling undocumented endpoints that reveal internal schemas, source object inventories, or execution metadata beyond their permitted request scope.",
+      "preconditions": [
+        "API documentation and route discovery tools are available",
+        "Application exposes source references or metadata"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Enumerate or discover hidden endpoints related to query context, schema references, or execution metadata.",
+          "expectedResult": "Only documented and authorized endpoints are reachable."
+        },
+        {
+          "step": 2,
+          "action": "Call internal metadata endpoints with analyst credentials.",
+          "expectedResult": "Unauthorized internal metadata is not returned."
+        },
+        {
+          "step": 3,
+          "action": "Attempt to append debug or verbose query parameters to standard result calls.",
+          "expectedResult": "Server ignores or rejects unauthorized verbosity flags."
+        }
+      ],
+      "postconditions": [
+        "Undocumented privileged metadata is not accessible",
+        "Debug modes are not externally activatable"
+      ],
+      "testData": "Discovered routes; verbose=true; debug=1",
+      "toolsRequired": [
+        "Burp Suite",
+        "OWASP ZAP",
+        "Postman"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 8.5,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-OWASP-001",
+      "title": "Validate broken object level authorization for requestId-based result access",
+      "category": "security",
+      "subCategory": "OWASP-A01 Broken Access Control",
+      "priority": "Critical",
+      "description": "Verify object-level authorization is enforced for every requestId and result object so one authenticated analyst cannot access another analyst's result/status by changing identifiers.",
+      "preconditions": [
+        "Two users with separate requests exist",
+        "RequestIds are known for both users"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Authenticate as User A and access User A's result successfully.",
+          "expectedResult": "Authorized access succeeds."
+        },
+        {
+          "step": 2,
+          "action": "Change requestId to User B's requestId in each relevant API endpoint: status, results, metadata, and queryContext.",
+          "expectedResult": "Each endpoint independently enforces authorization and denies access."
+        },
+        {
+          "step": 3,
+          "action": "Test sequential and non-sequential requestId enumeration patterns.",
+          "expectedResult": "Enumeration does not reveal object existence or data."
+        }
+      ],
+      "postconditions": [
+        "BOLA protections exist across all object endpoints",
+        "No object existence leak occurs"
+      ],
+      "testData": "RequestId_A; RequestId_B; enumerated IDs",
+      "toolsRequired": [
+        "Postman",
+        "Burp Suite"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.7,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-OWASP-002",
+      "title": "Validate cryptographic protection for tokens and transport of result data",
+      "category": "security",
+      "subCategory": "OWASP-A02 Cryptographic Failures",
+      "priority": "Critical",
+      "description": "Verify TLS is enforced for all result/status traffic, cookies use secure attributes, and authentication/session material is cryptographically protected during storage and transit.",
+      "preconditions": [
+        "HTTPS environment is available",
+        "Browser and proxy can inspect headers/certificates"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Attempt to access results/status over HTTP instead of HTTPS.",
+          "expectedResult": "Traffic is redirected or blocked; no sensitive data is served over insecure transport."
+        },
+        {
+          "step": 2,
+          "action": "Inspect cookies and tokens for Secure, HttpOnly, SameSite, and appropriate expiration settings.",
+          "expectedResult": "Session cookies are protected with secure attributes and not exposed to client scripts when not necessary."
+        },
+        {
+          "step": 3,
+          "action": "Review TLS certificate validity and supported protocols/ciphers.",
+          "expectedResult": "Weak protocols/ciphers are disabled and certificate trust is valid."
+        }
+      ],
+      "postconditions": [
+        "Sensitive traffic is protected in transit",
+        "Session artifacts use secure attributes"
+      ],
+      "testData": "Authenticated browser session",
+      "toolsRequired": [
+        "Browser DevTools",
+        "SSL Labs or equivalent",
+        "Burp Suite"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 8.8,
+      "complianceTag": "OWASP-A02"
+    },
+    {
+      "id": "SEC-OWASP-003",
+      "title": "Validate software and data integrity protections for client-side assets and API payload trust",
+      "category": "security",
+      "subCategory": "OWASP-A08 Software and Data Integrity Failures",
+      "priority": "High",
+      "description": "Verify application prevents execution of tampered scripts, untrusted dependencies, and unsigned or unvalidated payload assumptions that could alter status/result rendering.",
+      "preconditions": [
+        "Client application loads JavaScript assets",
+        "Build/deployment integrity controls are documented"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Inspect loaded scripts for integrity controls such as SRI where applicable and trusted origins.",
+          "expectedResult": "Only approved script sources are loaded; integrity controls are present according to architecture."
+        },
+        {
+          "step": 2,
+          "action": "Attempt to serve or reference a modified script from an untrusted source in the browser context.",
+          "expectedResult": "CSP/integrity controls block execution."
+        },
+        {
+          "step": 3,
+          "action": "Verify client does not trust critical authorization or completion state solely from unsigned local state.",
+          "expectedResult": "Server remains the source of truth for protected state."
+        }
+      ],
+      "postconditions": [
+        "Tampered assets/payload assumptions are mitigated",
+        "Trust boundaries are enforced"
+      ],
+      "testData": "Modified JS asset reference; altered local storage values",
+      "toolsRequired": [
+        "Browser DevTools",
+        "Burp Suite"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "Low",
+      "complianceTag": "OWASP-A08"
+    },
+    {
+      "id": "SEC-OWASP-004",
+      "title": "Validate SSRF resistance in source reference and backend integration parameters",
+      "category": "security",
+      "subCategory": "OWASP-A10 Server-Side Request Forgery",
+      "priority": "Medium",
+      "description": "Verify no user-controllable parameter in result retrieval, queryContext, status refresh, or request identifier resolution can trigger server-side requests to arbitrary internal or external URLs.",
+      "preconditions": [
+        "Any endpoint parameters influencing backend fetch or metadata enrichment are identified"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Inspect APIs for URL, callback, source reference, or external resource parameters tied to result retrieval.",
+          "expectedResult": "No unnecessary URL-fetch capability is exposed to clients."
+        },
+        {
+          "step": 2,
+          "action": "Attempt to supply localhost, cloud metadata, or internal IP URLs in any discovered parameter.",
+          "expectedResult": "Server rejects or ignores the input and performs no outbound SSRF request."
+        },
+        {
+          "step": 3,
+          "action": "Review logs/monitoring for outbound network attempts during the test.",
+          "expectedResult": "No unauthorized outbound call is made."
+        }
+      ],
+      "postconditions": [
+        "Server-side request initiation cannot be abused through client input",
+        "Outbound restrictions remain effective"
+      ],
+      "testData": "http://127.0.0.1:80; http://169.254.169.254/latest/meta-data",
+      "toolsRequired": [
+        "Burp Suite",
+        "Proxy",
+        "Network monitoring"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "OWASP-A10"
+    },
+    {
+      "id": "SEC-INJ-001",
+      "title": "Test SQL injection through requestId and result interaction parameters",
+      "category": "security",
+      "subCategory": "Input Validation - SQL Injection",
+      "priority": "Critical",
+      "description": "Verify requestId, sort, pagination, filter-like, and queryContext retrieval parameters cannot be exploited for SQL injection against PostgreSQL or intermediate services.",
+      "preconditions": [
+        "Status/results/queryContext endpoints are reachable",
+        "Interception tool is configured"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit SQL injection payloads in requestId and related parameters such as ' OR '1'='1, UNION SELECT, stacked queries, and comment sequences.",
+          "expectedResult": "Server validates input format strictly and rejects malicious values without DB errors or data leakage."
+        },
+        {
+          "step": 2,
+          "action": "Test numeric, UUID, and encoded payload variants in URL path, query string, headers, and body fields.",
+          "expectedResult": "All entry points consistently reject malicious patterns or safely parameterize input."
+        },
+        {
+          "step": 3,
+          "action": "Review responses, timing, and logs for evidence of blind, error-based, or time-based SQL injection.",
+          "expectedResult": "No injection is successful and no anomalous query execution occurs."
+        }
+      ],
+      "postconditions": [
+        "SQL injection vectors are mitigated across all inputs",
+        "Errors are sanitized and parameterized queries are confirmed where possible"
+      ],
+      "testData": "requestId=' OR '1'='1; sort=1 desc --; pg_sleep(5)",
+      "toolsRequired": [
+        "sqlmap",
+        "Burp Suite",
+        "Postman"
+      ],
+      "estimatedTime": "50 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.8,
+      "complianceTag": "OWASP-A03"
+    },
+    {
+      "id": "SEC-INJ-002",
+      "title": "Test reflected and stored XSS in result rendering, error messages, and query context",
+      "category": "security",
+      "subCategory": "Input Validation - Cross-Site Scripting",
+      "priority": "Critical",
+      "description": "Verify the interactive interface safely encodes all dynamic content including request identifiers, failure messages, column names, cell values, queryContext, and status text so malicious scripts cannot execute in the analyst's browser.",
+      "preconditions": [
+        "A test dataset or mocked result payload can include malicious strings",
+        "Browser with DevTools is available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Inject common XSS payloads into any user-controllable fields that may appear in result metadata or messages, such as request labels, source names, or error details.",
+          "expectedResult": "Payloads are rendered as harmless text and no script executes."
+        },
+        {
+          "step": 2,
+          "action": "Test malicious content in table cell values and column headers returned from backend or mock data.",
+          "expectedResult": "UI encodes values correctly in tabular rendering, sorting controls, and tooltips."
+        },
+        {
+          "step": 3,
+          "action": "Inspect DOM, console, and network activity for script execution, event handler firing, or CSP violations.",
+          "expectedResult": "No XSS execution occurs; CSP provides additional protection where configured."
+        }
+      ],
+      "postconditions": [
+        "Dynamic content is output-encoded/sanitized",
+        "No browser script execution from data-bound content occurs"
+      ],
+      "testData": "<script>alert(1)</script>; \"><img src=x onerror=alert(1)>",
+      "toolsRequired": [
+        "Burp Suite",
+        "Browser DevTools",
+        "OWASP ZAP"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 9.4,
+      "complianceTag": "OWASP-A03"
+    },
+    {
+      "id": "SEC-INJ-003",
+      "title": "Test command injection against backend processing parameters",
+      "category": "security",
+      "subCategory": "Input Validation - Command Injection",
+      "priority": "High",
+      "description": "Verify no result/status/queryContext parameter is passed to shell commands, OS utilities, or unsafe process execution on the server such that command injection becomes possible.",
+      "preconditions": [
+        "Endpoints and operational workflows are known sufficiently to assess shell invocation risk"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit command injection payloads in user-controllable parameters, including separators like ;, &&, |, backticks, and subshell syntax.",
+          "expectedResult": "Input is rejected or treated as inert text; no command execution side effects occur."
+        },
+        {
+          "step": 2,
+          "action": "Test encoded and platform-specific variants for Linux and Windows if applicable.",
+          "expectedResult": "No command execution occurs across variants."
+        },
+        {
+          "step": 3,
+          "action": "Review responses, timing, and server telemetry for indicators such as file creation, delayed response, or command output leakage.",
+          "expectedResult": "No evidence of shell execution is observed."
+        }
+      ],
+      "postconditions": [
+        "Command execution paths are not exposed via user input",
+        "Validation and safe API usage are confirmed"
+      ],
+      "testData": "requestId=abc;id; sort=$(whoami)",
+      "toolsRequired": [
+        "Burp Suite",
+        "Server telemetry",
+        "Postman"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 8.6,
+      "complianceTag": "OWASP-A03"
+    },
+    {
+      "id": "SEC-INJ-004",
+      "title": "Test LDAP injection against authentication or directory-backed role lookup",
+      "category": "security",
+      "subCategory": "Input Validation - LDAP Injection",
+      "priority": "Medium",
+      "description": "If authentication or RBAC resolution integrates with LDAP/AD, verify analyst identifiers, usernames, and role lookup inputs cannot be manipulated to bypass authentication or retrieve unauthorized group memberships.",
+      "preconditions": [
+        "Environment uses LDAP/AD for authentication or role resolution; otherwise mark not applicable",
+        "Test account integrated with directory exists"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit LDAP metacharacters in login or identity lookup fields, such as *, ), (|, and crafted filter payloads.",
+          "expectedResult": "Directory queries safely escape input and authentication/lookup is not bypassed."
+        },
+        {
+          "step": 2,
+          "action": "Attempt role/group enumeration using manipulated identity inputs during result access.",
+          "expectedResult": "Unauthorized directory data is not returned and access control remains intact."
+        },
+        {
+          "step": 3,
+          "action": "Review logs for sanitized handling of malformed directory queries.",
+          "expectedResult": "No LDAP errors or sensitive filter details are exposed to users."
+        }
+      ],
+      "postconditions": [
+        "LDAP-backed authentication/authorization is resilient to injection",
+        "Directory errors are sanitized"
+      ],
+      "testData": "*)(uid=*); (|(uid=*)(userPassword=*))",
+      "toolsRequired": [
+        "Burp Suite",
+        "Directory test environment",
+        "Postman"
+      ],
+      "estimatedTime": "30 minutes",
+      "automationFeasibility": "Low",
+      "complianceTag": "OWASP-A03"
+    },
+    {
+      "id": "SEC-AUTH-001",
+      "title": "Verify brute force protection on analyst authentication entry points",
+      "category": "security",
+      "subCategory": "Authentication & Session Management - Brute Force",
+      "priority": "High",
+      "description": "Verify login and token issuance endpoints enforce rate limiting, lockout, CAPTCHA, or step-up controls against brute force attempts targeting analyst accounts that access report results.",
+      "preconditions": [
+        "Authentication endpoint is accessible in test environment",
+        "A dedicated test account exists"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Attempt repeated failed logins against a test analyst account at increasing velocity.",
+          "expectedResult": "Rate limits, lockout, or progressive delays are triggered according to policy."
+        },
+        {
+          "step": 2,
+          "action": "Attempt distributed low-and-slow failures across multiple sessions or IPs if allowed in test scope.",
+          "expectedResult": "Detection controls still identify abuse patterns or cap attempts."
+        },
+        {
+          "step": 3,
+          "action": "Verify successful login remains possible after approved recovery flow only.",
+          "expectedResult": "Account recovery/unlock behavior is secure and auditable."
+        }
+      ],
+      "postconditions": [
+        "Brute force defenses are active",
+        "Authentication abuse is logged and alertable"
+      ],
+      "testData": "Valid username with invalid passwords",
+      "toolsRequired": [
+        "Burp Intruder",
+        "OWASP ZAP",
+        "SIEM/Log Viewer"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 8.7,
+      "complianceTag": "OWASP-A07"
+    },
+    {
+      "id": "SEC-AUTH-002",
+      "title": "Verify session hijacking defenses for interactive results access",
+      "category": "security",
+      "subCategory": "Authentication & Session Management - Session Hijacking",
+      "priority": "Critical",
+      "description": "Verify session identifiers cannot be stolen and replayed easily, and that session controls protect result data from hijacking via cookies, insecure transport, fixation, or reuse after logout.",
+      "preconditions": [
+        "Authenticated session can be created",
+        "Cookie/session attributes are inspectable"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Log in and inspect session cookie/token attributes for Secure, HttpOnly, SameSite, and rotation on authentication.",
+          "expectedResult": "Session material uses secure attributes and rotates appropriately."
+        },
+        {
+          "step": 2,
+          "action": "Attempt session fixation by supplying a pre-set session identifier before login.",
+          "expectedResult": "Application issues a new session after authentication and ignores attacker-fixed identifiers."
+        },
+        {
+          "step": 3,
+          "action": "Replay a captured session token from another browser or after logout.",
+          "expectedResult": "Hijacked/replayed session is rejected or invalidated according to policy."
+        }
+      ],
+      "postconditions": [
+        "Session fixation and replay are mitigated",
+        "Logged-out sessions cannot continue to access results"
+      ],
+      "testData": "Captured session cookie; pre-set session ID",
+      "toolsRequired": [
+        "Browser DevTools",
+        "Burp Suite"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "Medium",
+      "riskScore": 9,
+      "complianceTag": "OWASP-A07"
+    },
+    {
+      "id": "SEC-AUTH-003",
+      "title": "Reject token manipulation including role, scope, audience, and expiry tampering",
+      "category": "security",
+      "subCategory": "Authentication & Session Management - Token Manipulation",
+      "priority": "Critical",
+      "description": "Verify bearer tokens used for result access cannot be modified to extend expiration, change audience, escalate role, or alter domain scope.",
+      "preconditions": [
+        "Token-based auth is enabled",
+        "A valid token can be acquired in test environment"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Decode a valid token and identify claims such as exp, aud, role, scope, and domain.",
+          "expectedResult": "Claims are visible only as encoded content and remain trusted only after signature verification."
+        },
+        {
+          "step": 2,
+          "action": "Modify exp to future time, change aud, add admin scope, or replace domain claims, then resend requests.",
+          "expectedResult": "Server rejects all manipulated tokens."
+        },
+        {
+          "step": 3,
+          "action": "Test malformed token segments, none algorithm attempts, and mixed issuer/audience combinations.",
+          "expectedResult": "Token parsing/validation fails safely without authorization bypass."
+        }
+      ],
+      "postconditions": [
+        "Token claim tampering does not alter access",
+        "Validation failures are logged"
+      ],
+      "testData": "Manipulated JWT variants",
+      "toolsRequired": [
+        "jwt.io",
+        "Burp Suite",
+        "Postman"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.3,
+      "complianceTag": "OWASP-A07"
+    },
+    {
+      "id": "SEC-AUTHZ-001",
+      "title": "Detect horizontal privilege escalation across peer analysts' requests",
+      "category": "security",
+      "subCategory": "Authorization & Access Control - Horizontal Privilege Escalation",
+      "priority": "Critical",
+      "description": "Verify one analyst cannot access another analyst's results, statuses, metadata, or query context by modifying requestId, route, query parameter, or hidden API call.",
+      "preconditions": [
+        "Two analyst accounts with separate authorized requests exist"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Log in as Analyst A and confirm access to Analyst A request artifacts.",
+          "expectedResult": "Access to own request succeeds."
+        },
+        {
+          "step": 2,
+          "action": "Attempt all known endpoints for Analyst B's request using Analyst A session.",
+          "expectedResult": "Each endpoint denies access and returns no sensitive metadata."
+        },
+        {
+          "step": 3,
+          "action": "Attempt access through UI deep links, API calls, and replayed browser history entries.",
+          "expectedResult": "Horizontal access remains blocked through all paths."
+        }
+      ],
+      "postconditions": [
+        "Peer-to-peer access is prevented",
+        "All endpoints consistently enforce per-object authorization"
+      ],
+      "testData": "Analyst A/B accounts and requestIds",
+      "toolsRequired": [
+        "Postman",
+        "Burp Suite",
+        "Browser"
+      ],
+      "estimatedTime": "35 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.7,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-AUTHZ-002",
+      "title": "Detect vertical privilege escalation from analyst role to elevated support/admin role",
+      "category": "security",
+      "subCategory": "Authorization & Access Control - Vertical Privilege Escalation",
+      "priority": "Critical",
+      "description": "Verify analyst users cannot perform elevated administrative actions or access privileged result datasets, logs, debug details, or cross-domain metadata by modifying roles or calling hidden functions.",
+      "preconditions": [
+        "Role hierarchy is configured with analyst and elevated roles"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Authenticate as analyst and enumerate accessible UI actions and APIs.",
+          "expectedResult": "Only analyst functions are available."
+        },
+        {
+          "step": 2,
+          "action": "Invoke elevated role endpoints directly and manipulate any client role indicators.",
+          "expectedResult": "Server denies access regardless of client-side state."
+        },
+        {
+          "step": 3,
+          "action": "Verify no verbose debug panels, support-only views, or cross-tenant search endpoints can be opened by analyst.",
+          "expectedResult": "Elevated-only features remain inaccessible."
+        }
+      ],
+      "postconditions": [
+        "Vertical escalation is blocked server-side",
+        "Authorization violations are auditable"
+      ],
+      "testData": "Analyst credentials; elevated endpoint inventory",
+      "toolsRequired": [
+        "Burp Suite",
+        "Postman",
+        "OWASP ZAP"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 9.4,
+      "complianceTag": "OWASP-A01"
+    },
+    {
+      "id": "SEC-AUTHZ-003",
+      "title": "Validate function-level authorization on status, result, metadata, and retry operations",
+      "category": "security",
+      "subCategory": "Authorization & Access Control - Missing Function-Level Access Control",
+      "priority": "High",
+      "description": "Verify each business function in the interactive results workflow enforces authorization independently, including status polling, result retrieval, queryContext fetch, failure detail lookup, and any retry/reopen actions.",
+      "preconditions": [
+        "All workflow endpoints are identified",
+        "Test users with varying permissions are available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Map workflow API calls for status, completed results, query context, and failure messages in the browser.",
+          "expectedResult": "All functional endpoints are identified for testing."
+        },
+        {
+          "step": 2,
+          "action": "Using a low-privilege or partially authorized account, call each endpoint directly.",
+          "expectedResult": "Unauthorized functions are denied individually; access is not granted due to UI omission alone."
+        },
+        {
+          "step": 3,
+          "action": "Test hidden/retry/reopen actions if present via direct API invocation.",
+          "expectedResult": "Restricted functions enforce server-side permission checks."
+        }
+      ],
+      "postconditions": [
+        "No function relies solely on client-side hiding for protection",
+        "All workflow functions require appropriate permissions"
+      ],
+      "testData": "Low-privilege account; endpoint list",
+      "toolsRequired": [
+        "Browser DevTools",
+        "Postman",
+        "Burp Suite"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "High",
+      "riskScore": 8.8,
+      "complianceTag": "OWASP-A01"
+    }
+  ],
+  "reliability": [
+    {
+      "id": "REL-FAIL-001",
+      "title": "Validate UI resilience when query execution microservice crashes during running state",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Service Crash",
+      "priority": "Critical",
+      "description": "Verify that when the governed query execution microservice crashes after a request enters running state, the interactive interface does not present partial results as final, preserves the requestId, shows a safe failure or delayed status, logs the failure transition, and supports recovery without duplicate analyst submission.",
+      "preconditions": [
+        "Authenticated Automotive Reporting Analyst session is active",
+        "Approved reporting request with valid requestId exists",
+        "Chaos tooling can terminate the query execution microservice instance",
+        "Observability dashboards capture requestId, status transitions, duration, and failure codes",
+        "Test environment includes at least two service instances or restart capability"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit or open an approved reporting request and confirm the UI displays initial processing or queued state with the requestId.",
+          "expectedResult": "The request enters processing state and the requestId is visible or retrievable in logs and UI context."
+        },
+        {
+          "step": 2,
+          "action": "Wait until the status changes to running, then forcibly crash the query execution microservice handling the request.",
+          "expectedResult": "The active service instance terminates and the in-flight request is interrupted."
+        },
+        {
+          "step": 3,
+          "action": "Observe the UI during and after the crash for status behavior.",
+          "expectedResult": "The UI does not render incomplete tabular data as completed results and instead shows running, delayed, or failed state with a safe message and requestId."
+        },
+        {
+          "step": 4,
+          "action": "Verify backend logs, traces, and metrics for the affected request.",
+          "expectedResult": "Logs include requestId, transition from running to failed or retrying, failure code, and duration to interruption."
+        },
+        {
+          "step": 5,
+          "action": "Allow the service to restart or traffic to shift to a healthy instance, then refresh the request view without resubmitting.",
+          "expectedResult": "The request status is recovered consistently as completed, failed, or retrying, with no duplicate execution caused by refresh."
+        },
+        {
+          "step": 6,
+          "action": "Measure recovery time from crash detection to stable user-visible status.",
+          "expectedResult": "MTTR for this scenario meets the defined operational target and availability remains within tolerated bounds for the experiment window."
+        }
+      ],
+      "postconditions": [
+        "Service instance is restored",
+        "No orphaned duplicate query executions remain",
+        "Experiment logs and recovery metrics are recorded"
+      ],
+      "testData": "Approved request querying dealer, vehicle, or warranty reporting data with moderate execution time of 5-15 seconds.",
+      "toolsRequired": [
+        "Chaos Mesh or Gremlin",
+        "Kubernetes or service orchestrator access",
+        "APM/Tracing tool",
+        "Log aggregation dashboard"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-FAIL-002",
+      "title": "Validate user-safe behavior when PostgreSQL becomes unavailable during execution",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Database Failure",
+      "priority": "Critical",
+      "description": "Verify that loss of PostgreSQL availability during execution causes clear status feedback, no corrupted or partial final output, preserved request linkage, and proper backend recovery handling.",
+      "preconditions": [
+        "Authenticated session is active",
+        "Approved requestId exists",
+        "Chaos controls can stop PostgreSQL primary or block access",
+        "Read replicas or failover setup is available if applicable",
+        "Observability captures database connectivity failures"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Start execution of an approved reporting request and confirm the UI shows queued or running state.",
+          "expectedResult": "The request is accepted and processing starts with visible status."
+        },
+        {
+          "step": 2,
+          "action": "Inject database unavailability by stopping PostgreSQL or denying connections during execution.",
+          "expectedResult": "The application loses database connectivity and the query cannot complete normally."
+        },
+        {
+          "step": 3,
+          "action": "Observe the interactive results view and polling or push behavior.",
+          "expectedResult": "The UI shows failed or delayed status with a safe message and requestId; no stack traces, connection strings, or partial final tables are exposed."
+        },
+        {
+          "step": 4,
+          "action": "Review logs and metrics for dependency failure handling.",
+          "expectedResult": "Logs record requestId, failure code, database unavailable event, status transition, retry attempts if configured, and execution interruption timing."
+        },
+        {
+          "step": 5,
+          "action": "Restore PostgreSQL availability and reopen the request or refresh the page.",
+          "expectedResult": "The request state is accurately represented as failed, retriable, or completed after recovery with no duplicate execution unless explicitly retriggered by the system design."
+        },
+        {
+          "step": 6,
+          "action": "Measure time to user-visible recovery and service restoration.",
+          "expectedResult": "MTTR and availability percentage for the experiment meet defined resilience targets."
+        }
+      ],
+      "postconditions": [
+        "Database connectivity is restored",
+        "No inconsistent result records remain",
+        "Incident metrics are archived"
+      ],
+      "testData": "Long-running approved request returning vehicle service records.",
+      "toolsRequired": [
+        "Database administration access",
+        "Chaos platform",
+        "Metrics dashboard",
+        "Application logs"
+      ],
+      "estimatedTime": "60 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-FAIL-003",
+      "title": "Validate resilience to network partition between UI/backend and query service",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Network Partition",
+      "priority": "High",
+      "description": "Verify that a network partition between application tiers does not cause duplicate submissions, stale completed states, or lost request context, and that the interface shows delay or error states clearly until communication is restored.",
+      "preconditions": [
+        "Approved requestId is available",
+        "Authenticated analyst session is active",
+        "Network fault injection can partition application components",
+        "Polling or push-based status update mechanism is enabled"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open an approved request and initiate results retrieval.",
+          "expectedResult": "The UI shows processing state and begins status synchronization."
+        },
+        {
+          "step": 2,
+          "action": "Inject a network partition between the UI-facing service and the query/status service.",
+          "expectedResult": "Status updates cannot be retrieved during the partition."
+        },
+        {
+          "step": 3,
+          "action": "Observe the UI for status messaging and duplicate request behavior while the partition persists.",
+          "expectedResult": "The UI indicates delayed status retrieval or temporary unavailability, retains the requestId, and does not trigger duplicate query execution."
+        },
+        {
+          "step": 4,
+          "action": "Restore network connectivity and refresh or allow automatic resynchronization.",
+          "expectedResult": "The latest authoritative request status is displayed, and final results appear only if the request actually completed."
+        },
+        {
+          "step": 5,
+          "action": "Review logs and metrics for status polling frequency, timeout handling, and duplicate request prevention.",
+          "expectedResult": "Timeouts are logged, backend call volume remains controlled, and no duplicate submissions are recorded."
+        }
+      ],
+      "postconditions": [
+        "Network connectivity is normalized",
+        "Status synchronization resumes",
+        "No duplicate request records are present"
+      ],
+      "testData": "Approved request returning moderate result set with expected completion under 10 seconds in normal conditions.",
+      "toolsRequired": [
+        "Chaos Mesh or Toxiproxy",
+        "Network observability tooling",
+        "Application logs"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-FAIL-004",
+      "title": "Validate degraded but safe behavior under injected network latency",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Latency Injection",
+      "priority": "High",
+      "description": "Verify that injected latency across status or result retrieval paths does not cause false failure states, premature timeout messaging, duplicate polling storms, or user confusion, and that the system remains within defined SLA or degrades gracefully.",
+      "preconditions": [
+        "Authenticated session is active",
+        "Approved requestId exists",
+        "Latency injection tooling is available",
+        "Baseline status and result response metrics are captured"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Record baseline end-to-end response time for a successful request under normal conditions.",
+          "expectedResult": "Baseline completion and status update times are available for comparison."
+        },
+        {
+          "step": 2,
+          "action": "Inject network latency of increasing levels between application and query/status service.",
+          "expectedResult": "Requests experience delayed status and result retrieval."
+        },
+        {
+          "step": 3,
+          "action": "Execute approved requests during each latency level and observe the interface.",
+          "expectedResult": "The UI continues to show processing or delayed state appropriately and does not present incomplete results as final."
+        },
+        {
+          "step": 4,
+          "action": "Monitor polling frequency, retries, and backend load during latency.",
+          "expectedResult": "Retry and polling behavior remains bounded and does not create excessive backend calls."
+        },
+        {
+          "step": 5,
+          "action": "Compare successful request visibility against the 10-second SLO and record degradation thresholds.",
+          "expectedResult": "At least 95% of successful requests meet the 10-second visibility target under normal load; when latency exceeds budget, the system degrades gracefully with clear delay messaging."
+        }
+      ],
+      "postconditions": [
+        "Latency injection is removed",
+        "Performance and resilience measurements are documented"
+      ],
+      "testData": "Three approved requests with low, medium, and high row counts.",
+      "toolsRequired": [
+        "Toxiproxy or Gremlin",
+        "APM",
+        "Metrics dashboard"
+      ],
+      "estimatedTime": "50 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-FAIL-005",
+      "title": "Validate system behavior under CPU exhaustion on results service node",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Resource Exhaustion CPU",
+      "priority": "High",
+      "description": "Verify that CPU starvation on the results delivery service degrades the user experience safely, preserves status accuracy, avoids incorrect completed states, and recovers without data corruption.",
+      "preconditions": [
+        "Results service is deployed on a controllable node or container",
+        "CPU stress tooling is available",
+        "Monitoring for CPU, latency, and errors is enabled",
+        "Approved requestId exists"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Start a normal approved request and confirm baseline UI responsiveness.",
+          "expectedResult": "The request flows normally and baseline metrics are known."
+        },
+        {
+          "step": 2,
+          "action": "Inject high CPU load on the service node handling status/result delivery.",
+          "expectedResult": "Service resource contention occurs."
+        },
+        {
+          "step": 3,
+          "action": "Open and monitor multiple approved requests during the stress window.",
+          "expectedResult": "The UI may slow or show delayed updates, but statuses remain accurate and no false completions occur."
+        },
+        {
+          "step": 4,
+          "action": "Check for duplicate requests, timeouts, and user-safe failure messaging.",
+          "expectedResult": "Timeouts are handled clearly, duplicate submissions are prevented, and requestId remains available."
+        },
+        {
+          "step": 5,
+          "action": "Remove CPU stress and observe recovery.",
+          "expectedResult": "Service responsiveness returns to steady state within acceptable MTTR and pending requests resynchronize correctly."
+        }
+      ],
+      "postconditions": [
+        "CPU stress is stopped",
+        "Steady state metrics return to baseline range"
+      ],
+      "testData": "Batch of 10 approved requests opened concurrently.",
+      "toolsRequired": [
+        "stress-ng",
+        "Kubernetes metrics",
+        "Application monitoring"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-FAIL-006",
+      "title": "Validate resilience to memory exhaustion in query orchestration service",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Resource Exhaustion Memory",
+      "priority": "Critical",
+      "description": "Verify that memory pressure or OOM events in the query orchestration path do not produce corrupted request states, orphaned executions, or partial final output in the interface, and that restarted components recover coherently.",
+      "preconditions": [
+        "Memory stress tooling is available",
+        "OOM restart policies are enabled",
+        "Observability tracks pod restarts and request state transitions",
+        "Approved requestIds are available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Initiate one or more approved reporting requests and confirm processing begins.",
+          "expectedResult": "Requests enter queued or running state."
+        },
+        {
+          "step": 2,
+          "action": "Inject memory exhaustion into the orchestration service until it restarts or exhibits failures.",
+          "expectedResult": "The service encounters memory-related instability or restarts."
+        },
+        {
+          "step": 3,
+          "action": "Observe request status behavior in the UI before, during, and after the OOM event.",
+          "expectedResult": "The UI does not show incomplete result data as completed and instead shows accurate running, delayed, or failed status."
+        },
+        {
+          "step": 4,
+          "action": "Inspect backend state stores and logs for orphaned or duplicated request records.",
+          "expectedResult": "Request state remains consistent, and duplicate execution is not triggered by service recovery."
+        },
+        {
+          "step": 5,
+          "action": "Measure recovery time until new requests can be processed and affected request visibility stabilizes.",
+          "expectedResult": "MTTR meets the target and service availability remains within acceptable limits."
+        }
+      ],
+      "postconditions": [
+        "Service memory usage is normalized",
+        "Restarted instances are healthy",
+        "Affected requests are reconciled"
+      ],
+      "testData": "Mix of fast and long-running approved reporting requests.",
+      "toolsRequired": [
+        "stress-ng",
+        "Container orchestration dashboard",
+        "Logs and traces"
+      ],
+      "estimatedTime": "60 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-FAIL-007",
+      "title": "Validate disk exhaustion handling for logs and execution metadata persistence",
+      "category": "reliability",
+      "subCategory": "Failure Injection - Resource Exhaustion Disk",
+      "priority": "High",
+      "description": "Verify that low disk conditions affecting log storage or metadata persistence do not break status visibility silently, do not lose critical request tracking information beyond tolerance, and surface recoverable failure signals.",
+      "preconditions": [
+        "Environment allows disk space consumption on service host or volume",
+        "Execution metadata and logs are written to the target volume",
+        "Approved requestIds are available",
+        "Alerting for low disk is configured"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create a baseline successful request and confirm logs and metadata are persisted normally.",
+          "expectedResult": "Normal request processing and observability data are confirmed."
+        },
+        {
+          "step": 2,
+          "action": "Consume disk space on the service volume until low-disk thresholds and then near-full conditions are reached.",
+          "expectedResult": "Low-disk alerts trigger and write operations become constrained."
+        },
+        {
+          "step": 3,
+          "action": "Execute approved requests under the low-disk condition.",
+          "expectedResult": "The system either continues with degraded behavior or fails safely, while the UI continues to show accurate status and requestId."
+        },
+        {
+          "step": 4,
+          "action": "Verify whether execution metadata, failure codes, and status transitions are still captured or buffered according to design.",
+          "expectedResult": "Critical tracking data is retained within design limits, and any loss is detected and alerted."
+        },
+        {
+          "step": 5,
+          "action": "Free disk space and confirm service recovery and observability restoration.",
+          "expectedResult": "Normal status processing resumes within acceptable MTTR."
+        }
+      ],
+      "postconditions": [
+        "Disk space is restored",
+        "Logging and metadata persistence return to normal"
+      ],
+      "testData": "Approved request with moderate result set and repeat executions.",
+      "toolsRequired": [
+        "Filesystem utilities",
+        "Monitoring dashboards",
+        "Application logs"
+      ],
+      "estimatedTime": "50 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-CHAOS-001",
+      "title": "Run hypothesis-driven chaos experiment for steady-state status visibility under single service instance loss",
+      "category": "reliability",
+      "subCategory": "Chaos Engineering - Hypothesis Validation",
+      "priority": "Critical",
+      "description": "Test the hypothesis that under normal load, losing a single non-primary service instance will not cause more than tolerated deviation from steady-state metrics: 95% of successful requests show status update or final result within 10 seconds, duplicate submissions remain unchanged, and availability remains above target.",
+      "preconditions": [
+        "Steady-state baselines for latency, error rate, duplicate submissions, and availability are defined",
+        "Blast radius is limited to one service instance in non-production or controlled environment",
+        "Synthetic traffic simulates analyst behavior",
+        "Rollback plan is approved"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Establish steady-state metrics for 15-30 minutes under normal traffic.",
+          "expectedResult": "Baseline SLI values for request visibility latency, error rate, duplicate submissions, and availability are recorded."
+        },
+        {
+          "step": 2,
+          "action": "State the experiment hypothesis and success criteria before injection.",
+          "expectedResult": "Hypothesis is documented with measurable thresholds and blast radius boundaries."
+        },
+        {
+          "step": 3,
+          "action": "Terminate one service instance responsible for result/status delivery while maintaining synthetic and manual traffic.",
+          "expectedResult": "Traffic shifts to healthy instances within the defined blast radius."
+        },
+        {
+          "step": 4,
+          "action": "Monitor SLI/SLO impact during the experiment window.",
+          "expectedResult": "95% of successful requests still show status or result within 10 seconds, availability remains within target, and no spike in duplicate submissions occurs."
+        },
+        {
+          "step": 5,
+          "action": "Restore the terminated instance or let orchestration replace it and continue monitoring.",
+          "expectedResult": "Metrics return to steady state within the expected MTTR."
+        }
+      ],
+      "postconditions": [
+        "Experiment findings are documented",
+        "Steady-state deviation analysis is completed",
+        "Follow-up actions are tracked if thresholds were breached"
+      ],
+      "testData": "Synthetic approved requests covering vehicle, dealer, warranty, and service report types.",
+      "toolsRequired": [
+        "Chaos engineering platform",
+        "Synthetic monitoring",
+        "SLO dashboard"
+      ],
+      "estimatedTime": "90 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-CHAOS-002",
+      "title": "Validate blast radius containment for controlled database chaos experiment",
+      "category": "reliability",
+      "subCategory": "Chaos Engineering - Blast Radius Definition",
+      "priority": "High",
+      "description": "Ensure that a database fault experiment affects only the scoped reporting workflow components and does not unintentionally impact unrelated services, domains, or unauthorized requests.",
+      "preconditions": [
+        "Environment segmentation and traffic tagging are enabled",
+        "Only the reporting workflow namespace or service group is in scope",
+        "Monitoring spans both in-scope and out-of-scope systems"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Document the in-scope services, request types, and user sessions for the experiment.",
+          "expectedResult": "Blast radius boundaries are explicitly defined and approved."
+        },
+        {
+          "step": 2,
+          "action": "Inject a controlled database connectivity fault only for the reporting workflow components.",
+          "expectedResult": "Only in-scope services experience the injected fault."
+        },
+        {
+          "step": 3,
+          "action": "Monitor unrelated applications, domains, and user flows during the experiment.",
+          "expectedResult": "Out-of-scope services maintain normal error rate, latency, and availability."
+        },
+        {
+          "step": 4,
+          "action": "Review network, service mesh, and tracing data to confirm fault propagation boundaries.",
+          "expectedResult": "The fault remains contained within the approved blast radius."
+        }
+      ],
+      "postconditions": [
+        "Fault injection is removed",
+        "Containment evidence is archived"
+      ],
+      "testData": "Scoped synthetic requests for the automotive reporting workflow only.",
+      "toolsRequired": [
+        "Service mesh controls",
+        "Chaos tooling",
+        "Distributed tracing"
+      ],
+      "estimatedTime": "60 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-ChangeManagement"
+    },
+    {
+      "id": "REL-CHAOS-003",
+      "title": "Validate steady-state metrics before, during, and after dependency degradation experiment",
+      "category": "reliability",
+      "subCategory": "Chaos Engineering - Steady State Validation",
+      "priority": "High",
+      "description": "Verify that steady-state indicators for the reporting result experience are measurable and stable enough to support chaos experiments, and quantify acceptable deviation during dependency degradation.",
+      "preconditions": [
+        "SLIs are defined: status visibility latency, successful result availability, duplicate submission rate, and error rate",
+        "Monitoring and alerting are configured",
+        "Synthetic traffic generators are operational"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Capture steady-state metrics for at least 30 minutes under representative load.",
+          "expectedResult": "Baseline SLI values and normal variance ranges are documented."
+        },
+        {
+          "step": 2,
+          "action": "Inject a mild dependency degradation such as 20-30% increased latency to the status service.",
+          "expectedResult": "The platform remains functional with potentially small metric deviation."
+        },
+        {
+          "step": 3,
+          "action": "Compare live metrics against baseline thresholds.",
+          "expectedResult": "Any deviation remains within accepted error budget, and user-visible status continues to be accurate."
+        },
+        {
+          "step": 4,
+          "action": "Remove degradation and monitor return to baseline.",
+          "expectedResult": "Metrics normalize within defined MTTR and no long-tail errors remain."
+        }
+      ],
+      "postconditions": [
+        "Baseline and degraded state comparison is saved",
+        "Threshold refinements are proposed if needed"
+      ],
+      "testData": "Representative steady stream of approved requests over 30 minutes.",
+      "toolsRequired": [
+        "Synthetic monitoring",
+        "SLO dashboards",
+        "Latency injection tool"
+      ],
+      "estimatedTime": "75 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Monitoring"
+    },
+    {
+      "id": "REL-CHAOS-004",
+      "title": "Validate recovery completeness after induced service and dependency failures",
+      "category": "reliability",
+      "subCategory": "Chaos Engineering - Recovery Validation",
+      "priority": "Critical",
+      "description": "Verify that after induced failures are removed, the system returns fully to healthy state, including service health, accurate request status rendering, restored observability, and normal SLI values, without manual data repair unless planned.",
+      "preconditions": [
+        "A prior fault or chaos injection scenario has been executed",
+        "Recovery runbooks exist",
+        "Health checks and dashboards are available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "End the injected failure and restore all targeted infrastructure or dependencies.",
+          "expectedResult": "Fault conditions are removed and dependent systems begin recovery."
+        },
+        {
+          "step": 2,
+          "action": "Validate health endpoints, pod or node status, and connectivity across services.",
+          "expectedResult": "All critical components report healthy status."
+        },
+        {
+          "step": 3,
+          "action": "Reopen previously affected requestIds and execute new approved requests.",
+          "expectedResult": "Existing requests show correct terminal or current state, and new requests process normally."
+        },
+        {
+          "step": 4,
+          "action": "Compare post-recovery SLIs with pre-fault baselines.",
+          "expectedResult": "Latency, error rate, and availability return to normal range within the defined MTTR target."
+        },
+        {
+          "step": 5,
+          "action": "Inspect observability streams for delayed ingestion, missing logs, or stale metrics.",
+          "expectedResult": "Observability is restored and suitable for audit and troubleshooting."
+        }
+      ],
+      "postconditions": [
+        "System is back to steady state",
+        "Recovery evidence and MTTR measurements are documented"
+      ],
+      "testData": "Affected and unaffected requestIds from the preceding experiment.",
+      "toolsRequired": [
+        "Monitoring dashboards",
+        "Log aggregation",
+        "Health check utilities"
+      ],
+      "estimatedTime": "60 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-DEP-001",
+      "title": "Validate resilience when external authorization or identity API is unavailable",
+      "category": "reliability",
+      "subCategory": "Dependency Resilience - External API Failure",
+      "priority": "Critical",
+      "description": "Verify that failure of an external identity or authorization dependency does not expose unauthorized data, does not incorrectly render completed results, and provides safe user messaging while maintaining security boundaries.",
+      "preconditions": [
+        "Application depends on external IdP or authorization API for session or RBAC validation",
+        "Failure injection can block or error the dependency",
+        "Authorized and unauthorized test users are available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Authenticate as an authorized analyst and access an approved request successfully to establish baseline behavior.",
+          "expectedResult": "The request is accessible and results can be viewed under normal conditions."
+        },
+        {
+          "step": 2,
+          "action": "Inject failure or timeout on the external identity or authorization API.",
+          "expectedResult": "Authorization checks cannot complete normally."
+        },
+        {
+          "step": 3,
+          "action": "Attempt to open result views with both authorized and unauthorized users.",
+          "expectedResult": "The system fails closed, does not expose data, and shows safe error or unavailable messaging."
+        },
+        {
+          "step": 4,
+          "action": "Review logs for dependency failure handling and access control decisions.",
+          "expectedResult": "Logs capture the dependency error, requestId or session context, and denied access outcome without leaking sensitive details."
+        },
+        {
+          "step": 5,
+          "action": "Restore the dependency and retry access.",
+          "expectedResult": "Normal authorization behavior returns within acceptable MTTR."
+        }
+      ],
+      "postconditions": [
+        "Identity dependency is restored",
+        "No unauthorized data exposure occurred"
+      ],
+      "testData": "One approved request within user scope and one outside user scope.",
+      "toolsRequired": [
+        "Toxiproxy",
+        "Identity provider test environment",
+        "Security and application logs"
+      ],
+      "estimatedTime": "50 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Security"
+    },
+    {
+      "id": "REL-DEP-002",
+      "title": "Validate graceful handling of database unavailability as a critical dependency",
+      "category": "reliability",
+      "subCategory": "Dependency Resilience - Database Unavailability",
+      "priority": "Critical",
+      "description": "Verify that when PostgreSQL is unavailable before or during result retrieval, the interface shows accurate execution state, safe messaging, request identifier, and no misleading completed output, while backend recovery mechanisms behave as designed.",
+      "preconditions": [
+        "Approved requestId exists",
+        "Database can be made unavailable or inaccessible",
+        "Observability for connection pool and query failures is enabled"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Block database connectivity before submitting or opening an approved request.",
+          "expectedResult": "The system cannot start or complete query execution."
+        },
+        {
+          "step": 2,
+          "action": "Observe the UI and API responses for the request.",
+          "expectedResult": "The UI shows failed or delayed status with requestId and safe messaging; no final table is rendered."
+        },
+        {
+          "step": 3,
+          "action": "Inspect retry, timeout, and error handling behavior in backend telemetry.",
+          "expectedResult": "Retries and failures are logged with bounded behavior and clear error codes."
+        },
+        {
+          "step": 4,
+          "action": "Restore database connectivity and verify recovery behavior on refresh and new requests.",
+          "expectedResult": "New requests succeed normally, and interrupted requests reflect correct final or failed state without duplication."
+        }
+      ],
+      "postconditions": [
+        "Database connectivity is restored",
+        "Request states are reconciled"
+      ],
+      "testData": "Approved request expected to return query context and rows.",
+      "toolsRequired": [
+        "Database access controls",
+        "Monitoring dashboards",
+        "Application logs"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-DEP-003",
+      "title": "Validate resilience to message queue delays or failures in asynchronous status updates",
+      "category": "reliability",
+      "subCategory": "Dependency Resilience - Message Queue Issues",
+      "priority": "High",
+      "description": "Verify that if asynchronous status events are delayed, duplicated, or unavailable from the message queue, the UI still resolves to correct request state through fallback mechanisms and does not mislabel requests.",
+      "preconditions": [
+        "Status updates or execution events rely on a message queue or event bus",
+        "Queue controls allow pause, delay, and duplicate message injection",
+        "Fallback polling or reconciliation path exists"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Execute an approved request under normal conditions to capture expected event sequence.",
+          "expectedResult": "Normal queued, running, and completed or failed events are observed."
+        },
+        {
+          "step": 2,
+          "action": "Pause or delay queue delivery for status events and execute another approved request.",
+          "expectedResult": "Real-time events are delayed or unavailable."
+        },
+        {
+          "step": 3,
+          "action": "Observe whether the UI uses fallback polling or reconciliation to show accurate request status.",
+          "expectedResult": "The UI eventually reflects the correct state without duplicate submissions or false final output."
+        },
+        {
+          "step": 4,
+          "action": "Inject duplicate or out-of-order status messages for the same requestId.",
+          "expectedResult": "The system ignores stale or duplicate events and preserves the authoritative request state."
+        },
+        {
+          "step": 5,
+          "action": "Restore queue processing and confirm backlog drains correctly.",
+          "expectedResult": "Queued events are processed safely and no incorrect state regressions occur."
+        }
+      ],
+      "postconditions": [
+        "Queue is restored to healthy state",
+        "Backlog is drained",
+        "State reconciliation is verified"
+      ],
+      "testData": "Approved requests with distinct requestIds and mixed completion times.",
+      "toolsRequired": [
+        "Queue administration tools",
+        "Event inspection utilities",
+        "Observability dashboard"
+      ],
+      "estimatedTime": "70 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-ProcessingIntegrity"
+    },
+    {
+      "id": "REL-DEP-004",
+      "title": "Validate cache failure handling for request status or query context retrieval",
+      "category": "reliability",
+      "subCategory": "Dependency Resilience - Cache Failure",
+      "priority": "Medium",
+      "description": "Verify that cache outage, stale cache entries, or cache eviction does not produce incorrect request status or mismatched query context in the interactive results view, and that fallback to source of truth works safely.",
+      "preconditions": [
+        "Application uses cache for status, query context, or metadata",
+        "Cache can be disabled, flushed, or made unavailable",
+        "Source-of-truth datastore remains accessible"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Retrieve an approved request under normal conditions and capture displayed status, SQL summary, and source references.",
+          "expectedResult": "The UI shows correct and complete request-linked context."
+        },
+        {
+          "step": 2,
+          "action": "Disable or flush the cache and retrieve the same and new approved requests.",
+          "expectedResult": "The application falls back to the source of truth and still shows correct status and context."
+        },
+        {
+          "step": 3,
+          "action": "Inject stale cache data for a known requestId if supported.",
+          "expectedResult": "The application detects staleness or refreshes from authoritative data, preventing mismatched status or query context."
+        },
+        {
+          "step": 4,
+          "action": "Measure response time and error behavior during cache outage.",
+          "expectedResult": "Performance may degrade but remains within acceptable limits or degrades gracefully with clear status behavior."
+        }
+      ],
+      "postconditions": [
+        "Cache is restored",
+        "Stale test entries are removed"
+      ],
+      "testData": "Approved request with visible queryContext and final results.",
+      "toolsRequired": [
+        "Redis or cache administration tools",
+        "Monitoring dashboard",
+        "Application logs"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-ProcessingIntegrity"
+    },
+    {
+      "id": "REL-DATA-001",
+      "title": "Validate transaction rollback and no partial finalization on mid-execution failure",
+      "category": "reliability",
+      "subCategory": "Data Integrity - Transaction Rollback",
+      "priority": "Critical",
+      "description": "Verify that if a failure occurs while persisting execution metadata, status transitions, or result references, transactional boundaries or compensating actions prevent partial finalization that could show incorrect completed state to the analyst.",
+      "preconditions": [
+        "Execution metadata and status persistence path is identifiable",
+        "Failure injection can interrupt persistence mid-transaction",
+        "Audit or reconciliation tables are queryable"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit an approved request and trace the persistence points for status and result metadata.",
+          "expectedResult": "The normal transaction flow for request state is understood."
+        },
+        {
+          "step": 2,
+          "action": "Inject a failure during metadata persistence after execution starts but before final completion state is committed.",
+          "expectedResult": "The transaction is interrupted."
+        },
+        {
+          "step": 3,
+          "action": "Inspect the UI and backend records for the affected requestId.",
+          "expectedResult": "The request is not incorrectly marked completed, and no partial result payload is presented as final."
+        },
+        {
+          "step": 4,
+          "action": "Verify rollback or compensating action records.",
+          "expectedResult": "State is rolled back or corrected to a safe terminal or recoverable status."
+        },
+        {
+          "step": 5,
+          "action": "Run reconciliation and re-open the request.",
+          "expectedResult": "The request state remains consistent across UI and backend stores."
+        }
+      ],
+      "postconditions": [
+        "Interrupted transactions are resolved",
+        "No inconsistent completed states remain"
+      ],
+      "testData": "Approved request with measurable execution lifecycle events.",
+      "toolsRequired": [
+        "Database transaction logs",
+        "Failure injection tooling",
+        "Audit query access"
+      ],
+      "estimatedTime": "60 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-ProcessingIntegrity"
+    },
+    {
+      "id": "REL-DATA-002",
+      "title": "Validate backup and restore of execution metadata and result references",
+      "category": "reliability",
+      "subCategory": "Data Integrity - Backup and Restore",
+      "priority": "High",
+      "description": "Verify that execution metadata required for request tracking, status history, and result linkage can be restored from backup and still support accurate analyst-facing result history and troubleshooting.",
+      "preconditions": [
+        "Backups exist for metadata stores supporting request status and result linkage",
+        "Restore environment is available",
+        "Known requestIds exist in the backup window"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Identify a set of requests with known status transitions, query context, and completion outcomes.",
+          "expectedResult": "Reference dataset for validation is established."
+        },
+        {
+          "step": 2,
+          "action": "Restore the metadata store from a recent backup into a validation environment.",
+          "expectedResult": "The backup is restored successfully."
+        },
+        {
+          "step": 3,
+          "action": "Query restored records for requestId, status transitions, execution duration, row count, and failure codes.",
+          "expectedResult": "Required metadata is present and accurate relative to the reference set."
+        },
+        {
+          "step": 4,
+          "action": "Access the application or validation tools against the restored dataset.",
+          "expectedResult": "Historical request states and query context remain understandable and linked correctly."
+        }
+      ],
+      "postconditions": [
+        "Restore environment is retained or cleaned per policy",
+        "Restore validation evidence is recorded"
+      ],
+      "testData": "Set of completed, failed, and delayed requests from the backup interval.",
+      "toolsRequired": [
+        "Backup/restore tooling",
+        "Database access",
+        "Audit reports"
+      ],
+      "estimatedTime": "90 minutes",
+      "automationFeasibility": "Low",
+      "complianceTag": "SOC2-Backup"
+    },
+    {
+      "id": "REL-DATA-003",
+      "title": "Validate RTO compliance for recovery of reporting results experience after major outage",
+      "category": "reliability",
+      "subCategory": "Data Integrity - RTO Compliance",
+      "priority": "Critical",
+      "description": "Verify that the reporting results experience, including status feedback and query context retrieval, is restored within the defined Recovery Time Objective after a simulated major outage affecting core services.",
+      "preconditions": [
+        "RTO target is defined and approved",
+        "Recovery runbook exists",
+        "Major outage scenario can be simulated in controlled environment",
+        "Start and end timestamps can be captured precisely"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Simulate a major outage impacting result delivery services and required metadata paths.",
+          "expectedResult": "The reporting results experience becomes unavailable or severely degraded."
+        },
+        {
+          "step": 2,
+          "action": "Initiate documented recovery procedures and record start time.",
+          "expectedResult": "Recovery activities begin according to runbook."
+        },
+        {
+          "step": 3,
+          "action": "Continuously test core user journey: open approved request, see status updates, and view final results with query context.",
+          "expectedResult": "Core journey remains unavailable until recovery completes."
+        },
+        {
+          "step": 4,
+          "action": "Record the moment the core journey is fully functional again and compare against the RTO target.",
+          "expectedResult": "Actual restoration time meets or is below the approved RTO."
+        }
+      ],
+      "postconditions": [
+        "Environment is restored",
+        "RTO measurement is documented with evidence"
+      ],
+      "testData": "Approved requests prepared before outage simulation.",
+      "toolsRequired": [
+        "Disaster recovery tooling",
+        "Runbook",
+        "Monitoring dashboards"
+      ],
+      "estimatedTime": "120 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-BusinessContinuity"
+    },
+    {
+      "id": "REL-DATA-004",
+      "title": "Validate RPO compliance for request metadata and status history after restore",
+      "category": "reliability",
+      "subCategory": "Data Integrity - RPO Compliance",
+      "priority": "High",
+      "description": "Verify that after recovery from backup or replica, loss of request metadata, status transitions, and result references stays within the defined Recovery Point Objective and does not exceed acceptable data loss thresholds.",
+      "preconditions": [
+        "RPO target is defined",
+        "Backups or replicas are available",
+        "Known test requests are created before and near the failure window"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create and document test requests with timestamps, statuses, and query context before the planned failure window.",
+          "expectedResult": "A reference timeline of request state changes is available."
+        },
+        {
+          "step": 2,
+          "action": "Simulate data loss event and recover from backup or replica according to procedure.",
+          "expectedResult": "The metadata store is restored to the available recovery point."
+        },
+        {
+          "step": 3,
+          "action": "Compare restored request history against the reference timeline.",
+          "expectedResult": "Missing data, if any, falls within the approved RPO threshold."
+        },
+        {
+          "step": 4,
+          "action": "Verify the UI or reporting tools do not misrepresent missing request history as successful or complete when metadata is absent.",
+          "expectedResult": "The application handles recovered data gaps safely and transparently."
+        }
+      ],
+      "postconditions": [
+        "RPO validation report is completed",
+        "Any data gap beyond tolerance is escalated"
+      ],
+      "testData": "Timestamped requests created at intervals leading up to the simulated loss event.",
+      "toolsRequired": [
+        "Backup/replication tools",
+        "Database diff utilities",
+        "Audit logs"
+      ],
+      "estimatedTime": "100 minutes",
+      "automationFeasibility": "Low",
+      "complianceTag": "SOC2-BusinessContinuity"
+    },
+    {
+      "id": "REL-CB-001",
+      "title": "Validate circuit breaker opens after repeated dependency failures",
+      "category": "reliability",
+      "subCategory": "Circuit Breaker - Open State Transition",
+      "priority": "High",
+      "description": "Verify that repeated failures from a downstream dependency such as PostgreSQL, cache, or authorization API cause the circuit breaker to open, preventing cascading failures and reducing wasted retries while preserving accurate analyst messaging.",
+      "preconditions": [
+        "Circuit breaker is configured on a dependency path",
+        "Failure threshold and timing are known",
+        "Monitoring exposes circuit breaker state"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Inject failures on the protected dependency for consecutive requests.",
+          "expectedResult": "Initial requests fail according to retry policy and contribute to breaker threshold."
+        },
+        {
+          "step": 2,
+          "action": "Continue requests until the configured failure threshold is exceeded.",
+          "expectedResult": "The circuit breaker transitions to open state."
+        },
+        {
+          "step": 3,
+          "action": "Submit additional approved requests while the breaker is open.",
+          "expectedResult": "Requests fail fast or return degraded status handling without long waits, and the UI shows safe failure or delay messaging with requestId."
+        },
+        {
+          "step": 4,
+          "action": "Inspect metrics and logs for breaker state changes and blocked calls.",
+          "expectedResult": "Open-state transitions and prevented downstream calls are recorded."
+        }
+      ],
+      "postconditions": [
+        "Circuit breaker state is reset after test",
+        "Failure thresholds and behavior are documented"
+      ],
+      "testData": "Series of approved requests targeting same protected dependency path.",
+      "toolsRequired": [
+        "Fault injection tool",
+        "Circuit breaker metrics",
+        "Application logs"
+      ],
+      "estimatedTime": "40 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-CB-002",
+      "title": "Validate exponential backoff retry policy on transient dependency failure",
+      "category": "reliability",
+      "subCategory": "Circuit Breaker - Retry Policy Validation",
+      "priority": "High",
+      "description": "Verify that transient failures trigger bounded retries with exponential backoff and jitter where configured, avoiding request storms while allowing successful recovery if the dependency becomes available quickly.",
+      "preconditions": [
+        "Retry policy is documented with max attempts and backoff pattern",
+        "Transient fault injection is available",
+        "Timing metrics can be captured precisely"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Inject a transient dependency failure lasting long enough to trigger retries but short enough to recover within retry window.",
+          "expectedResult": "The first call fails and retry logic activates."
+        },
+        {
+          "step": 2,
+          "action": "Execute an approved request and capture timestamps of each retry attempt.",
+          "expectedResult": "Retries occur with increasing delays following the configured exponential backoff policy."
+        },
+        {
+          "step": 3,
+          "action": "Observe backend load and duplicate execution behavior during retries.",
+          "expectedResult": "Retries remain bounded, no retry storm occurs, and no duplicate user-level request execution is created."
+        },
+        {
+          "step": 4,
+          "action": "Allow the dependency to recover within retry limit.",
+          "expectedResult": "The request completes successfully or returns a consistent final state without analyst resubmission."
+        },
+        {
+          "step": 5,
+          "action": "Repeat with a failure lasting beyond max retries.",
+          "expectedResult": "The request ends in safe failure or delayed state with proper messaging and logged retry exhaustion."
+        }
+      ],
+      "postconditions": [
+        "Retry configuration observations are recorded",
+        "Dependency state is restored"
+      ],
+      "testData": "Approved request with moderate execution time and visible status transitions.",
+      "toolsRequired": [
+        "Toxiproxy or chaos tooling",
+        "APM tracing",
+        "Logs"
+      ],
+      "estimatedTime": "55 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-CB-003",
+      "title": "Validate half-open circuit breaker state recovery behavior",
+      "category": "reliability",
+      "subCategory": "Circuit Breaker - Half-Open State Testing",
+      "priority": "Medium",
+      "description": "Verify that after cooldown, the circuit breaker transitions from open to half-open, allows limited test traffic, and either closes on success or reopens on failure without causing widespread impact.",
+      "preconditions": [
+        "Circuit breaker can be forced into open state from a prior test",
+        "Cooldown period and half-open rules are known",
+        "Dependency can be toggled healthy or unhealthy"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the circuit breaker through induced dependency failures.",
+          "expectedResult": "Breaker enters open state."
+        },
+        {
+          "step": 2,
+          "action": "Wait for cooldown period to elapse and restore dependency health.",
+          "expectedResult": "Breaker becomes eligible for half-open test traffic."
+        },
+        {
+          "step": 3,
+          "action": "Send a limited number of approved requests through the protected path.",
+          "expectedResult": "Only the configured trial requests are allowed through."
+        },
+        {
+          "step": 4,
+          "action": "Verify breaker closes when trial requests succeed.",
+          "expectedResult": "Circuit breaker transitions to closed state and normal traffic resumes."
+        },
+        {
+          "step": 5,
+          "action": "Repeat with dependency still failing during half-open state.",
+          "expectedResult": "Breaker reopens quickly, limiting impact and preserving fail-fast behavior."
+        }
+      ],
+      "postconditions": [
+        "Circuit breaker is returned to normal closed state if possible",
+        "State transition evidence is captured"
+      ],
+      "testData": "Small set of approved requests for controlled trial traffic.",
+      "toolsRequired": [
+        "Circuit breaker telemetry",
+        "Chaos tooling",
+        "Application metrics"
+      ],
+      "estimatedTime": "50 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-HA-001",
+      "title": "Validate automatic failover of application service instances with minimal user impact",
+      "category": "reliability",
+      "subCategory": "Failover & High Availability - Automatic Failover",
+      "priority": "Critical",
+      "description": "Verify that when an application instance serving status or result requests fails, traffic automatically shifts to healthy instances and the analyst can continue to observe accurate status and final results with minimal interruption.",
+      "preconditions": [
+        "Multiple application instances are running behind a load balancer",
+        "Health checks and auto-replacement are configured",
+        "Synthetic traffic or active user sessions are available"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Establish normal request flow through the results interface and capture baseline success rate and latency.",
+          "expectedResult": "Baseline availability and latency are known."
+        },
+        {
+          "step": 2,
+          "action": "Terminate one active application instance during ongoing request processing.",
+          "expectedResult": "The instance is removed from service."
+        },
+        {
+          "step": 3,
+          "action": "Observe active sessions and new requests through the load balancer.",
+          "expectedResult": "Traffic shifts automatically to healthy instances and users continue seeing accurate request state."
+        },
+        {
+          "step": 4,
+          "action": "Measure failover duration and user-visible interruption.",
+          "expectedResult": "Failover completes within the target MTTR and availability percentage remains within SLA/SLO."
+        }
+      ],
+      "postconditions": [
+        "Application capacity is restored",
+        "Failover metrics are documented"
+      ],
+      "testData": "Concurrent approved requests from multiple analyst sessions.",
+      "toolsRequired": [
+        "Load balancer dashboard",
+        "Chaos tooling",
+        "APM"
+      ],
+      "estimatedTime": "45 minutes",
+      "automationFeasibility": "High",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-HA-002",
+      "title": "Verify zero data loss for request metadata during service failover",
+      "category": "reliability",
+      "subCategory": "Failover & High Availability - Zero Data Loss Verification",
+      "priority": "Critical",
+      "description": "Verify that failover of application or orchestration components does not lose requestId mapping, status history, query context, or final result references beyond the approved RPO, and that analysts do not see missing or duplicated request executions.",
+      "preconditions": [
+        "HA deployment is active",
+        "Persistent state stores are replicated or durable",
+        "Known approved requests are in flight during test"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Start multiple approved requests and record their requestIds and current statuses.",
+          "expectedResult": "In-flight requests are tracked with a reference list."
+        },
+        {
+          "step": 2,
+          "action": "Force failover of the application or orchestration component managing those requests.",
+          "expectedResult": "The active component is replaced or traffic moves to standby."
+        },
+        {
+          "step": 3,
+          "action": "After failover, retrieve each request by requestId.",
+          "expectedResult": "Each request retains its correct status history and query context with no lost or duplicated records beyond RPO tolerance."
+        },
+        {
+          "step": 4,
+          "action": "Compare pre- and post-failover metadata snapshots.",
+          "expectedResult": "No unexpected data loss or status regression is detected."
+        }
+      ],
+      "postconditions": [
+        "Failover state is normalized",
+        "Data consistency report is completed"
+      ],
+      "testData": "At least 20 in-flight and recently completed requestIds.",
+      "toolsRequired": [
+        "Database snapshot tools",
+        "Application logs",
+        "Diff utilities"
+      ],
+      "estimatedTime": "70 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-ProcessingIntegrity"
+    },
+    {
+      "id": "REL-HA-003",
+      "title": "Validate load balancer failover and session continuity for interactive results view",
+      "category": "reliability",
+      "subCategory": "Failover & High Availability - Load Balancer Failover",
+      "priority": "High",
+      "description": "Verify that failure or reconfiguration of the load balancing layer does not strand analyst sessions, lose request tracking, or cause duplicate backend request submission when the interactive results interface reconnects.",
+      "preconditions": [
+        "Redundant load balancing or ingress setup exists",
+        "Session handling strategy is known",
+        "Approved requestIds are available in active sessions"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open active analyst sessions with requests in queued, running, and completed states.",
+          "expectedResult": "Sessions are stable and represent mixed lifecycle states."
+        },
+        {
+          "step": 2,
+          "action": "Fail the primary load balancer or ingress path and force traffic to secondary path.",
+          "expectedResult": "Traffic reroutes through the secondary path."
+        },
+        {
+          "step": 3,
+          "action": "Observe browser session behavior, status refreshes, and request continuity.",
+          "expectedResult": "Users maintain or quickly regain access, requestIds remain traceable, and no duplicate submissions are triggered."
+        },
+        {
+          "step": 4,
+          "action": "Validate that completed requests still show correct tabular data and query context after failover.",
+          "expectedResult": "Result rendering remains accurate and intact."
+        }
+      ],
+      "postconditions": [
+        "Primary and secondary load balancing are restored to intended state",
+        "Session continuity results are documented"
+      ],
+      "testData": "Three browser sessions each with different request states.",
+      "toolsRequired": [
+        "Ingress or load balancer controls",
+        "Browser session tools",
+        "Monitoring dashboard"
+      ],
+      "estimatedTime": "60 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Availability"
+    },
+    {
+      "id": "REL-HA-004",
+      "title": "Validate database replication and failover consistency for reporting queries",
+      "category": "reliability",
+      "subCategory": "Failover & High Availability - Database Replication Testing",
+      "priority": "Critical",
+      "description": "Verify that database replication and automatic or manual failover preserve readable reporting data, request metadata consistency, and acceptable recovery time, and that query results remain trustworthy after primary-to-replica transition.",
+      "preconditions": [
+        "PostgreSQL replication is configured",
+        "Failover procedure or automation is available",
+        "Replication lag metrics are visible",
+        "Reference reporting queries and expected results are known"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Run reference approved reporting requests against the primary and capture results, row counts, and query context.",
+          "expectedResult": "Reference baseline outputs are recorded."
+        },
+        {
+          "step": 2,
+          "action": "Trigger database failover from primary to replica during active and new request processing.",
+          "expectedResult": "Database leadership changes and applications reconnect per configuration."
+        },
+        {
+          "step": 3,
+          "action": "Re-run or refresh approved requests after failover.",
+          "expectedResult": "Requests return consistent data and correct status behavior without exposing partial or stale results beyond defined replication lag tolerance."
+        },
+        {
+          "step": 4,
+          "action": "Compare post-failover results and metadata with the baseline and replication lag metrics.",
+          "expectedResult": "Differences, if any, are within approved RPO/lag thresholds, and failover time meets the RTO/MTTR target."
+        },
+        {
+          "step": 5,
+          "action": "Record resulting availability percentage during the failover window.",
+          "expectedResult": "Availability remains within defined HA target for the service."
+        }
+      ],
+      "postconditions": [
+        "Database topology is stabilized",
+        "Replication and failover validation report is completed"
+      ],
+      "testData": "Approved requests for vehicle, dealer, warranty, and service datasets with known expected row counts.",
+      "toolsRequired": [
+        "PostgreSQL replication monitoring",
+        "Failover orchestration tools",
+        "Result comparison scripts",
+        "Observability dashboard"
+      ],
+      "estimatedTime": "90 minutes",
+      "automationFeasibility": "Medium",
+      "complianceTag": "SOC2-Availability"
+    }
+  ],
+  "selectedTypes": {
+    "functional": true,
+    "edgeCases": true,
+    "negative": true,
+    "accessibility": true,
+    "performance": false,
+    "security": true,
+    "usability": false,
+    "reliability": true
+  },
+  "userStoryObject": {
+    "id": "ado-3425",
+    "title": "As an Automotive Reporting Analyst, I want query results returned through an interactive interface with status feedback so that I can review PostgreSQL data efficiently and trust the reporting outcome",
+    "description": "<div><strong>CONTEXT &amp; BACKGROUND:</strong><br><br>This story completes the LLM-driven automotive reporting workflow by delivering PostgreSQL query outcomes through an interactive interface rather than leaving the analyst at intent interpretation alone. The Automotive Reporting Analyst needs visible execution feedback and explainable result presentation to trust the reported vehicle, dealer, warranty, service, or related automotive data returned by the platform.<br><br><strong>CURRENT STATE:</strong><br><br>The platform intent workflow exists conceptually, but result delivery and status communication are incomplete or inconsistent. Analysts may not know whether a PostgreSQL request is still running, has failed, or has produced data tied to the executed SQL, which reduces confidence in the reporting outcome and slows review.<br><br><strong>DESIRED STATE:</strong><br><br>After an approved interpreted request is executed, the analyst can open a single interactive results experience that shows processing status, final tabular data, and query context linked to the executed SQL and source data references. The user receives timely feedback, can review returned rows efficiently, and can distinguish completed results from failed or still-running requests.<br><br><strong>KEY FUNCTIONALITY:</strong><br><br><div>• Render PostgreSQL query results in an interactive results view with sortable tabular output and request-level metadata. </div><br/><div>• Show execution status updates such as queued, running, completed, and failed within the same interface. </div><br/><div>• Associate displayed results with the executed SQL text or summary and source schema/table or view context. </div><br/><div>• Return user-safe failure or delay messaging with a request identifier when execution does not complete normally. </div><br><br><strong>USER INTERACTION FLOW:</strong><br><br><div>1. The Automotive Reporting Analyst submits or opens an approved reporting request from the AI query workflow. </div><br/><div>2. The interface displays an initial processing state while the platform starts PostgreSQL execution. </div><br/><div>3. The system updates the visible status to queued or running and refreshes the request state without duplicate submission. </div><br/><div>4. When execution completes, the interface replaces the status view with interactive results and supporting query context. </div><br/><div>5. The analyst reviews returned rows, column headings, row count, and execution details tied to the request. </div><br/><div>6. If execution fails or takes too long, the interface shows a clear status or error message and the request identifier instead of presenting incomplete output as final. </div><br><br><strong>TECHNICAL CONSIDERATIONS:</strong><br><br><div>• Data source: approved PostgreSQL reporting queries and execution metadata returned by the governed query service. </div><br/><div>• Validation: only approved interpreted requests with a valid requestId may be fetched; result payloads must include columns, rows, executionStatus, requestId, and queryContext before the UI renders the completed state. </div><br/><div>• Security: require authenticated session and enforce RBAC so users can view only results for domains and requests they are authorized to access; never expose database connection details in API or UI responses. </div><br/><div>• Observability: log requestId, status transitions, execution duration, result row count, and failure codes to support audit and troubleshooting. </div><br/><div>• Performance: support status or result response within the 10-second SLA for successful requests under normal load and use polling or push updates that avoid excessive backend calls. </div><br><br><strong>OUT OF SCOPE:</strong><br><br><div>• Direct SQL authoring or editing by the analyst. </div><br/><div>• Dashboard building, report scheduling, and data export formats beyond the interactive results view. </div><br/><div>• Changes to intent interpretation, SQL generation rules, or PostgreSQL schema design. </div><br><br><strong>SUCCESS METRICS:</strong><br><br><div>• At least 95% of successfully completed requests show a status update or final result within 10 seconds. </div><br/><div>• 100% of completed result views include request-linked query context for executed SQL and source references. </div><br/><div>• Reduction in analyst re-submissions caused by unclear execution state, measured by duplicate request attempts per session. </div> </div><br><div><strong>Persona:</strong> Automotive Reporting Analyst (Automotive Reporting Analyst) </div>",
+    "acceptanceCriteria": "<div>1. When an approved interpreted request is submitted, the platform retrieves data from PostgreSQL and renders the returned rows in an interactive results view without exposing raw database credentials, direct SQL editing controls, or unrestricted database access. </div><br/><div>2. For at least 95% of successfully completed requests under normal operating conditions, the user receives either a processing status update or the final results within 10 seconds of submission. </div><br/><div>3. The interactive interface displays the execution state for each request as queued, running, completed, or failed, and updates the visible state without requiring the user to resubmit the request. </div><br/><div>4. Completed results include query context that ties the displayed output to the executed SQL and source PostgreSQL objects so the analyst can understand how the reporting outcome was produced. </div><br/><div>5. If query execution fails or exceeds the normal response window, the interface shows a non-technical status or error message with the request identifier and does not display partial or misleading final results as complete. </div>",
+    "adoWorkItemId": 3425,
+    "state": "New",
+    "assignedTo": "Unassigned",
+    "createdDate": "2026-09-23T11:29:23.043Z",
+    "priority": 2,
+    "storyPoints": 5,
+    "tags": "devx-brd-c19a882c-c19a-4690-9af6-b76b273bf4d1",
+    "brdId": "c19a882c-c19a-4690-9af6-b76b273bf4d1",
+    "epicId": "epic-3376",
+    "featureId": "feature-3386",
+    "source": "ado",
+    "adoUrl": "https://dev.azure.com/delta-studio/8f843efc-0511-4050-adaf-8ffa27fbac9f/_workitems/edit/3425"
+  }
+}
