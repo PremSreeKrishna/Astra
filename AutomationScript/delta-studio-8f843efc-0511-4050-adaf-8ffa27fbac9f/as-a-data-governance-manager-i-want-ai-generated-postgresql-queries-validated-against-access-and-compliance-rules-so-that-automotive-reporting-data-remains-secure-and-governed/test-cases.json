@@ -1,0 +1,625 @@
+{
+  "storyId": "ado-3434",
+  "storyTitle": "As a Data Governance Manager, I want AI-generated PostgreSQL queries validated against access and compliance rules so that automotive reporting data remains secure and governed",
+  "testCases": [],
+  "functional": [
+    {
+      "id": "TC-FUNC-001",
+      "title": "Validate an approved read-only SELECT query against role-mapped objects and release it for controlled execution with audit evidence",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "A valid SSO-authenticated user exists with reporting role claim 'regional_sales_analyst'.",
+        "Role-policy metadata maps 'regional_sales_analyst' to approved PostgreSQL objects 'reporting.sales_summary_vw' and 'reporting.dealer_dim' only.",
+        "Validation and execution services are available, and immutable audit log storage is enabled for query validation events.",
+        "A unique queryId 'QRY-VAL-1001' is available for the test request, and API monitoring is enabled to confirm whether POST /api/reporting/query-executions is called."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Prepare a POST request to /api/reporting/query-validations using the authenticated token for role 'regional_sales_analyst' and payload containing queryId 'QRY-VAL-1001' with candidate SQL: 'SELECT dealer_id, report_month, total_sales FROM reporting.sales_summary_vw WHERE report_month = ''2025-01'' LIMIT 100'.",
+          "expectedResult": "The request is accepted for validation with the authenticated role resolved from the SSO token as 'regional_sales_analyst'."
+        },
+        {
+          "step": 2,
+          "action": "Submit the validation request and inspect the immediate validation response.",
+          "expectedResult": "The service returns a successful validation outcome indicating the SQL is SELECT-based and eligible for governance evaluation; no rejection reason is returned."
+        },
+        {
+          "step": 3,
+          "action": "Review the validation details in the response payload or logs for referenced objects and statement classification.",
+          "expectedResult": "The query is classified as read-only, and the only referenced object recorded is 'reporting.sales_summary_vw', which is approved for the role."
+        },
+        {
+          "step": 4,
+          "action": "Verify downstream service activity for the submitted queryId 'QRY-VAL-1001'.",
+          "expectedResult": "After successful validation, the system releases the query to controlled execution and calls POST /api/reporting/query-executions exactly once for the same queryId."
+        },
+        {
+          "step": 5,
+          "action": "Query the immutable audit log for validation records associated with queryId 'QRY-VAL-1001'.",
+          "expectedResult": "An immutable audit record exists containing queryId 'QRY-VAL-1001', requester role 'regional_sales_analyst', referenced objects including 'reporting.sales_summary_vw', validation outcome 'approved' or equivalent success state, a policy reason code indicating pass, and a timestamp."
+        },
+        {
+          "step": 6,
+          "action": "Confirm that the validation response does not expose any internal policy metadata beyond the governed decision details.",
+          "expectedResult": "The response contains governed validation information suitable for execution flow and does not include sensitive internal rule configuration."
+        }
+      ],
+      "postconditions": [
+        "QueryId 'QRY-VAL-1001' has a recorded successful validation event in immutable audit storage.",
+        "The approved query has been released to POST /api/reporting/query-executions for controlled execution.",
+        "No unauthorized schemas, tables, or views were referenced during the test.",
+        "The authenticated user session remains valid and available for subsequent requests."
+      ]
+    },
+    {
+      "id": "TC-FUNC-002",
+      "title": "Apply masking or redaction rules when an otherwise approved SELECT query references protected automotive reporting columns",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "A valid SSO-authenticated user exists with reporting role claim 'customer_support_reporting'.",
+        "Role-policy metadata allows the role to query approved view 'reporting.customer_vehicle_reporting_vw'.",
+        "Data-classification policy marks columns 'customer_email' and 'vin' in 'reporting.customer_vehicle_reporting_vw' as protected and configured for masking or redaction for this role.",
+        "A unique queryId 'QRY-VAL-1002' is available, and audit logging is enabled."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Prepare a POST request to /api/reporting/query-validations using the authenticated token for role 'customer_support_reporting' with queryId 'QRY-VAL-1002' and candidate SQL: 'SELECT customer_id, customer_email, vin, warranty_status FROM reporting.customer_vehicle_reporting_vw WHERE warranty_status = ''ACTIVE'' LIMIT 50'.",
+          "expectedResult": "The validation service accepts the request and resolves the requester role from the token as 'customer_support_reporting'."
+        },
+        {
+          "step": 2,
+          "action": "Submit the validation request and inspect the governed validation response.",
+          "expectedResult": "The query is not rejected for object access because the referenced view is approved for the role."
+        },
+        {
+          "step": 3,
+          "action": "Review the response details or validation artifact for treatment of protected fields 'customer_email' and 'vin'.",
+          "expectedResult": "The service applies configured masking, redaction, or field exclusion rules to protected columns before marking the query eligible for execution."
+        },
+        {
+          "step": 4,
+          "action": "Verify that the execution release payload or validated query representation reflects governed handling of the protected fields rather than raw unrestricted access.",
+          "expectedResult": "The protected columns are represented according to policy, such as masked expressions, redacted output, or excluded fields, and the governed query is the one eligible for execution."
+        },
+        {
+          "step": 5,
+          "action": "Check whether POST /api/reporting/query-executions is invoked for queryId 'QRY-VAL-1002' after policy application.",
+          "expectedResult": "The execution endpoint is called only after masking or redaction rules have been successfully applied."
+        },
+        {
+          "step": 6,
+          "action": "Query the immutable audit log for queryId 'QRY-VAL-1002'.",
+          "expectedResult": "The audit record captures queryId, requester role, referenced object 'reporting.customer_vehicle_reporting_vw', validation outcome as approved after governance processing, an applicable policy reason code, and a timestamp."
+        }
+      ],
+      "postconditions": [
+        "Protected columns requested in queryId 'QRY-VAL-1002' are governed according to configured masking, redaction, or exclusion policy before execution release.",
+        "A successful immutable audit record exists for queryId 'QRY-VAL-1002'.",
+        "The query has been released to controlled execution only in governed form, not as raw unrestricted SQL."
+      ]
+    },
+    {
+      "id": "TC-FUNC-003",
+      "title": "Approve a query only when row limit, join scope, and execution safety controls are satisfied",
+      "category": "Functional",
+      "priority": "High",
+      "preconditions": [
+        "A valid SSO-authenticated user exists with reporting role claim 'dealer_performance_manager'.",
+        "Role-policy metadata allows access to approved objects 'reporting.dealer_dim' and 'reporting.warranty_claim_summary_vw' and permits joins only between those approved reporting objects.",
+        "Safety policy is configured with a maximum row limit of 5000, required LIMIT clause, and timeout risk thresholds that permit simple constrained joins.",
+        "A unique queryId 'QRY-VAL-1003' is available, and service logs can be reviewed for validation and execution flow."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Prepare a POST request to /api/reporting/query-validations with queryId 'QRY-VAL-1003' and candidate SQL: 'SELECT d.dealer_id, d.dealer_name, w.claim_count FROM reporting.dealer_dim d JOIN reporting.warranty_claim_summary_vw w ON d.dealer_id = w.dealer_id WHERE w.claim_month = ''2025-02'' LIMIT 500'.",
+          "expectedResult": "The service receives the request and resolves the authenticated role as 'dealer_performance_manager'."
+        },
+        {
+          "step": 2,
+          "action": "Submit the validation request and review statement analysis details.",
+          "expectedResult": "The SQL is parsed successfully as a single read-only SELECT statement with a permitted join between approved reporting objects."
+        },
+        {
+          "step": 3,
+          "action": "Review the governed response for safety control evaluation.",
+          "expectedResult": "The query passes row limit validation because LIMIT 500 is present and within policy, join scope validation because only approved join targets are used, and timeout or execution risk assessment because the estimated risk is below the configured threshold."
+        },
+        {
+          "step": 4,
+          "action": "Verify whether the query is released to the execution service after passing all safety checks.",
+          "expectedResult": "POST /api/reporting/query-executions is called once for queryId 'QRY-VAL-1003' only after successful validation."
+        },
+        {
+          "step": 5,
+          "action": "Inspect the immutable audit record for queryId 'QRY-VAL-1003'.",
+          "expectedResult": "The audit record includes queryId, requester role, both referenced approved objects, validation outcome 'approved', a success reason code, and a timestamp."
+        },
+        {
+          "step": 6,
+          "action": "Confirm the validation response returned to the caller reflects a governed pass decision rather than a raw parser success only.",
+          "expectedResult": "The response explicitly indicates the query satisfied governance and safety controls and is eligible for controlled execution."
+        }
+      ],
+      "postconditions": [
+        "QueryId 'QRY-VAL-1003' has a successful immutable audit record with referenced objects and pass outcome.",
+        "The validated query has been forwarded to controlled execution.",
+        "No safety-control block reason is associated with this queryId."
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "id": "TC-NEGA-001",
+      "title": "Reject non-read-only SQL and stacked statement payloads without calling the execution endpoint",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "A valid SSO-authenticated user exists with reporting role claim 'regional_sales_analyst'.",
+        "The validation service is available and configured to allow only single-statement SELECT-based read operations.",
+        "API monitoring is enabled to confirm whether POST /api/reporting/query-executions is invoked.",
+        "A unique queryId 'QRY-VAL-2001' is available for this validation attempt."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Prepare a POST request to /api/reporting/query-validations using the valid authenticated token and queryId 'QRY-VAL-2001' with candidate SQL: 'SELECT dealer_id FROM reporting.sales_summary_vw LIMIT 10; DROP TABLE reporting.sales_summary_vw'.",
+          "expectedResult": "The request is accepted for validation intake and associated with the authenticated user and queryId."
+        },
+        {
+          "step": 2,
+          "action": "Submit the request and inspect the validation response.",
+          "expectedResult": "The service rejects the payload because it contains a multi-statement sequence and a non-read-only DDL command."
+        },
+        {
+          "step": 3,
+          "action": "Review the response body for the rejection details returned to the caller.",
+          "expectedResult": "A governed, non-sensitive failure response is returned with a policy reason code indicating disallowed statement type or multi-statement payload; the response does not expose internal parser or database details."
+        },
+        {
+          "step": 4,
+          "action": "Check execution-service telemetry for queryId 'QRY-VAL-2001'.",
+          "expectedResult": "POST /api/reporting/query-executions is not called at all for the rejected query."
+        },
+        {
+          "step": 5,
+          "action": "Query the immutable audit log for queryId 'QRY-VAL-2001'.",
+          "expectedResult": "An audit record exists showing queryId, requester role, validation outcome 'blocked' or equivalent, a policy reason code for non-read-only or stacked statements, and a timestamp."
+        },
+        {
+          "step": 6,
+          "action": "Repeat the validation with a second payload in the same session using 'UPDATE reporting.sales_summary_vw SET total_sales = 0 WHERE dealer_id = 10' under a new trace within the same query family, if supported by the test harness.",
+          "expectedResult": "The service consistently rejects non-SELECT DML input as governed blocked SQL and still does not call the execution endpoint."
+        }
+      ],
+      "postconditions": [
+        "No database execution request is created for queryId 'QRY-VAL-2001' or the repeated non-read-only attempt.",
+        "Immutable audit evidence exists for the blocked validation decision with policy reason code.",
+        "The authenticated session remains active, but the submitted SQL is not eligible for execution."
+      ]
+    },
+    {
+      "id": "TC-NEGA-002",
+      "title": "Block a SELECT query that references an unapproved schema or object for the authenticated reporting role",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "A valid SSO-authenticated user exists with reporting role claim 'regional_sales_analyst'.",
+        "Role-policy metadata for 'regional_sales_analyst' allows access only to 'reporting.sales_summary_vw' and explicitly does not allow schema 'raw_finance' or table 'raw_finance.loan_applications'.",
+        "Audit logging and API monitoring are enabled.",
+        "A unique queryId 'QRY-VAL-2002' is available."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Prepare a POST request to /api/reporting/query-validations with queryId 'QRY-VAL-2002' and candidate SQL: 'SELECT application_id, applicant_ssn FROM raw_finance.loan_applications LIMIT 25'.",
+          "expectedResult": "The validation service accepts the request for analysis and resolves the requester role as 'regional_sales_analyst'."
+        },
+        {
+          "step": 2,
+          "action": "Submit the validation request and inspect the service response.",
+          "expectedResult": "The service identifies that 'raw_finance.loan_applications' is not mapped to the authenticated role and blocks the query."
+        },
+        {
+          "step": 3,
+          "action": "Review the rejection details in the API response.",
+          "expectedResult": "The caller receives a governed response with a non-sensitive policy reason code indicating unapproved schema, table, or view reference; no internal access-policy details are leaked."
+        },
+        {
+          "step": 4,
+          "action": "Verify whether any call is made to POST /api/reporting/query-executions for queryId 'QRY-VAL-2002'.",
+          "expectedResult": "No execution request is sent because object authorization failed during validation."
+        },
+        {
+          "step": 5,
+          "action": "Inspect the immutable audit log for queryId 'QRY-VAL-2002'.",
+          "expectedResult": "The audit record contains queryId, requester role, referenced object 'raw_finance.loan_applications', validation outcome 'blocked', an object-access policy reason code, and a timestamp."
+        }
+      ],
+      "postconditions": [
+        "The unauthorized object reference is blocked before any PostgreSQL execution attempt.",
+        "An immutable blocked-validation audit record exists for queryId 'QRY-VAL-2002'.",
+        "No data from the unapproved schema or table is exposed to the caller."
+      ]
+    },
+    {
+      "id": "TC-NEGA-003",
+      "title": "Block a query that fails safety controls due to missing or excessive row limit, disallowed join scope, or timeout risk",
+      "category": "Negative",
+      "priority": "High",
+      "preconditions": [
+        "A valid SSO-authenticated user exists with reporting role claim 'dealer_performance_manager'.",
+        "Safety policy requires a LIMIT clause, sets maximum row limit to 5000, restricts joins to approved reporting objects, and blocks queries with estimated timeout risk above threshold.",
+        "Role-policy metadata allows only approved reporting objects 'reporting.dealer_dim' and 'reporting.warranty_claim_summary_vw'.",
+        "API monitoring and immutable audit logging are enabled, and queryId 'QRY-VAL-2003' is reserved for this test."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Prepare a POST request to /api/reporting/query-validations with queryId 'QRY-VAL-2003' and candidate SQL: 'SELECT d.dealer_id, w.claim_count, f.contract_amount FROM reporting.dealer_dim d JOIN reporting.warranty_claim_summary_vw w ON d.dealer_id = w.dealer_id JOIN reporting.finance_contract_fact f ON d.dealer_id = f.dealer_id'.",
+          "expectedResult": "The request is accepted for validation processing under the authenticated role."
+        },
+        {
+          "step": 2,
+          "action": "Submit the validation request and inspect the response for safety evaluation outcome.",
+          "expectedResult": "The service blocks the query because it fails one or more configured safety controls: missing LIMIT clause, disallowed join scope due to additional join target outside permitted set, and/or estimated execution timeout risk."
+        },
+        {
+          "step": 3,
+          "action": "Review the rejection details returned in the API response.",
+          "expectedResult": "The response contains a governed, non-sensitive policy reason code representing the safety-control failure and does not include raw database optimizer internals."
+        },
+        {
+          "step": 4,
+          "action": "Verify the execution service activity for queryId 'QRY-VAL-2003'.",
+          "expectedResult": "POST /api/reporting/query-executions is not called because the query did not satisfy pre-execution safety requirements."
+        },
+        {
+          "step": 5,
+          "action": "Check the immutable audit log for queryId 'QRY-VAL-2003'.",
+          "expectedResult": "An audit record exists with queryId, requester role, referenced objects, validation outcome 'blocked', a safety-related policy reason code, and a timestamp."
+        },
+        {
+          "step": 6,
+          "action": "Submit a second safety-violation variation in the same authenticated session using SQL 'SELECT dealer_id FROM reporting.dealer_dim LIMIT 100000' under a new trace if the test harness permits.",
+          "expectedResult": "The service also blocks the excessive row-limit case consistently and still does not invoke the execution endpoint."
+        }
+      ],
+      "postconditions": [
+        "No unsafe query from this test is released to PostgreSQL execution.",
+        "Blocked-validation audit evidence exists for the tested safety-control violations.",
+        "The service returns governed failure messaging for all rejected variants without exposing sensitive internals."
+      ]
+    }
+  ],
+  "edgeCases": [
+    {
+      "id": "TC-EDGE-001",
+      "title": "Validate query at safety-control boundary with maximum allowed row limit and approved pagination executes eligibility decision successfully",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "Test environment exposes POST /api/reporting/query-validations and immutable audit log storage for validation events.",
+        "Authenticated user has a valid SSO token for reporting role \"regional_reporting_manager\" with access to approved reporting view \"reporting.sales_summary_vw\".",
+        "Policy metadata for role \"regional_reporting_manager\" requires SELECT-only SQL, allows joins used by the approved view, and sets maximum row limit to 1000 rows with pagination allowed.",
+        "POST /api/reporting/query-executions is monitored or stubbed so any downstream execution release can be verified without ambiguity."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit POST /api/reporting/query-validations with a unique queryId and AI-generated SQL: \"SELECT report_month, dealer_region, total_sales FROM reporting.sales_summary_vw ORDER BY report_month DESC LIMIT 1000 OFFSET 0;\" using the authenticated token for role \"regional_reporting_manager\".",
+          "expectedResult": "The request is accepted for validation and the service parses the SQL as a single SELECT statement against an approved reporting view."
+        },
+        {
+          "step": 2,
+          "action": "Review the validation response payload returned for the submitted queryId.",
+          "expectedResult": "The response indicates the query passed safety-control checks because the row limit is present and exactly equal to the configured maximum of 1000, with no policy violation reason code returned."
+        },
+        {
+          "step": 3,
+          "action": "Verify the response details for referenced objects and governance outcome.",
+          "expectedResult": "The referenced object list includes only \"reporting.sales_summary_vw\" and the outcome marks the query as eligible for controlled execution."
+        },
+        {
+          "step": 4,
+          "action": "Check monitoring, stub logs, or integration trace for any call made after validation.",
+          "expectedResult": "A release toward POST /api/reporting/query-executions is permitted only after the successful validation outcome is recorded; there is no pre-validation execution attempt."
+        },
+        {
+          "step": 5,
+          "action": "Retrieve the immutable audit record for the submitted queryId from audit storage or audit log viewer.",
+          "expectedResult": "An audit record exists containing the queryId, requester role \"regional_reporting_manager\", referenced object \"reporting.sales_summary_vw\", validation outcome \"passed\" or equivalent success state, and a timestamp."
+        },
+        {
+          "step": 6,
+          "action": "Confirm the audit record does not contain a policy failure reason code for this boundary-valid request.",
+          "expectedResult": "The audit entry reflects a successful governance decision with no blocking policy reason code, preserving traceability for the allowed query."
+        }
+      ],
+      "postconditions": [
+        "A successful immutable validation event is stored for the submitted queryId.",
+        "The query remains eligible for controlled execution because it met the configured maximum row-limit boundary.",
+        "No unauthorized object access or policy-bypass condition is introduced in system state."
+      ]
+    },
+    {
+      "id": "TC-EDGE-002",
+      "title": "Block query that exceeds row-limit boundary by one row and verify no execution release occurs",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "Test environment exposes POST /api/reporting/query-validations, immutable audit logging, and observable downstream execution integration.",
+        "Authenticated user has a valid SSO token for reporting role \"regional_reporting_manager\" with access to approved reporting view \"reporting.sales_summary_vw\".",
+        "Policy metadata for role \"regional_reporting_manager\" sets the maximum allowed row limit to 1000 rows and requires row limits before execution.",
+        "Execution service logs or a stub are available to confirm whether POST /api/reporting/query-executions was called."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit POST /api/reporting/query-validations with a unique queryId and AI-generated SQL: \"SELECT report_month, dealer_region, total_sales FROM reporting.sales_summary_vw ORDER BY report_month DESC LIMIT 1001;\" using the authenticated token.",
+          "expectedResult": "The service accepts the request for validation and parses the payload as a single SELECT statement against an approved object."
+        },
+        {
+          "step": 2,
+          "action": "Inspect the validation response returned for the queryId.",
+          "expectedResult": "The response blocks the query because the requested limit exceeds the configured maximum by one row and returns a governed, non-sensitive policy reason code related to safety-control violation."
+        },
+        {
+          "step": 3,
+          "action": "Verify the response text and metadata exposed to the requester.",
+          "expectedResult": "The response explains that execution is not permitted due to row-limit policy failure without exposing internal rule implementation details or sensitive schema information."
+        },
+        {
+          "step": 4,
+          "action": "Check downstream integration traces, stub logs, or API gateway logs for POST /api/reporting/query-executions.",
+          "expectedResult": "No call to POST /api/reporting/query-executions is made for the blocked query."
+        },
+        {
+          "step": 5,
+          "action": "Retrieve the immutable audit record for the blocked queryId.",
+          "expectedResult": "An audit record exists containing the queryId, requester role, referenced object \"reporting.sales_summary_vw\", validation outcome \"blocked\" or equivalent, the policy reason code for excessive row limit, and a timestamp."
+        },
+        {
+          "step": 6,
+          "action": "Compare the stored audit outcome with the user-facing validation response.",
+          "expectedResult": "The audit record and API response are consistent, both showing that the query was blocked before any execution attempt."
+        }
+      ],
+      "postconditions": [
+        "A blocked immutable validation event is stored for the submitted queryId with the excessive-row-limit reason code.",
+        "No execution request is sent to PostgreSQL execution flow for this query.",
+        "The user session remains authenticated and the validation service remains available for subsequent requests."
+      ]
+    },
+    {
+      "id": "TC-EDGE-003",
+      "title": "Apply governance masking and exclusion to a query containing multiple protected automotive columns in one valid SELECT",
+      "category": "Edge Cases",
+      "priority": "High",
+      "preconditions": [
+        "Authenticated user has a valid SSO token for reporting role \"regional_reporting_manager\" that is permitted to query approved view \"reporting.customer_vehicle_finance_vw\".",
+        "Policy metadata for \"reporting.customer_vehicle_finance_vw\" marks customer_email as masked, customer_phone as redacted, vin as masked, and financing_account_number as excluded for role \"regional_reporting_manager\".",
+        "Validation service is configured to transform or annotate eligible SQL according to masking, redaction, and exclusion policy metadata before execution eligibility is determined.",
+        "Immutable audit logging is enabled and accessible for verification of referenced objects and validation outcome."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Submit POST /api/reporting/query-validations with a unique queryId and SQL: \"SELECT customer_email, customer_phone, vin, financing_account_number, dealer_name FROM reporting.customer_vehicle_finance_vw LIMIT 100;\" using the role \"regional_reporting_manager\".",
+          "expectedResult": "The service accepts the request, parses it as a single SELECT statement, and identifies that multiple protected columns are referenced from an approved reporting view."
+        },
+        {
+          "step": 2,
+          "action": "Review the validation response payload for field-level governance handling.",
+          "expectedResult": "The response indicates the query is not executable in its original form and that policy metadata has been applied so protected fields are masked, redacted, or excluded according to configuration before eligibility for execution."
+        },
+        {
+          "step": 3,
+          "action": "Inspect the governed query representation, transformed field list, or validation details returned by the service.",
+          "expectedResult": "customer_email and vin are shown as masked, customer_phone is redacted, financing_account_number is removed or marked excluded, and dealer_name remains unmodified because it is permitted."
+        },
+        {
+          "step": 4,
+          "action": "Verify that only approved objects are referenced and that the query still meets safety controls such as SELECT-only and row limit presence.",
+          "expectedResult": "The query remains within approved schema access and safety thresholds after protected-field handling is applied."
+        },
+        {
+          "step": 5,
+          "action": "Confirm whether the final governed response marks the transformed query as eligible for controlled execution.",
+          "expectedResult": "The validation outcome is successful only for the governed version of the query, not for the original unrestricted field projection."
+        },
+        {
+          "step": 6,
+          "action": "Retrieve the immutable audit record for the queryId.",
+          "expectedResult": "The audit entry records the queryId, requester role, referenced object \"reporting.customer_vehicle_finance_vw\", validation outcome, and traceable indication that protected-field policy rules were applied before execution eligibility."
+        }
+      ],
+      "postconditions": [
+        "A validation audit event exists for the queryId showing governance handling of protected columns.",
+        "The original unrestricted field projection is not released unchanged; only the policy-governed representation is eligible for controlled execution.",
+        "Protected customer, vehicle, and financing data remain subject to configured masking, redaction, or exclusion rules."
+      ]
+    }
+  ],
+  "accessibility": [
+    {
+      "id": "TC-ACCE-001",
+      "title": "Keyboard-only user can submit a validation request, review governed block feedback, and access audit details without pointer interaction",
+      "category": "Accessibility",
+      "priority": "High",
+      "preconditions": [
+        "Validation UI for AI-generated SQL review is available in a supported desktop browser with standard keyboard navigation enabled.",
+        "Test user is authenticated as Data Governance Manager and has permission to access the query validation screen and audit details panel.",
+        "A prepared blocked-query example is available, such as \"SELECT * FROM reporting.sales_summary_vw LIMIT 1001;\", which should fail safety-control validation.",
+        "Any modal, toast, or response panel used by the UI is enabled in the test environment."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "From the validation screen, use only the Tab, Shift+Tab, Enter, and Space keys to move focus from the page heading through the query input area, Validate button, and any supporting controls.",
+          "expectedResult": "All interactive elements in the core flow are reachable in a logical order, and the visible focus indicator remains clearly visible on each focused control."
+        },
+        {
+          "step": 2,
+          "action": "With focus in the SQL input field, enter the blocked-query example using the keyboard only and tab to the \"Validate\" button.",
+          "expectedResult": "The SQL text area accepts input without trapping focus, and the Validate button is reachable and operable from the keyboard."
+        },
+        {
+          "step": 3,
+          "action": "Press Enter or Space on the \"Validate\" button to submit the query for validation.",
+          "expectedResult": "The validation request is submitted successfully without mouse interaction, and focus moves to the response region, error summary, or first actionable result in a predictable manner."
+        },
+        {
+          "step": 4,
+          "action": "Continue keyboard navigation through the validation result content, including the governed reason code, blocked status, and any \"View Audit Details\" or equivalent control.",
+          "expectedResult": "The blocked outcome and non-sensitive reason are fully reachable and readable by keyboard, with no hidden controls or focus loss."
+        },
+        {
+          "step": 5,
+          "action": "Open the audit details panel or dialog using the keyboard only.",
+          "expectedResult": "If a dialog opens, focus is placed inside it, keyboard focus is trapped within the dialog while open, and audit fields such as queryId, role, outcome, and timestamp are keyboard accessible."
+        },
+        {
+          "step": 6,
+          "action": "Close the audit details panel or dialog using Escape or the keyboard-operable close button.",
+          "expectedResult": "The panel closes and focus returns to the previously focused triggering control, allowing the user to continue navigation without disorientation."
+        }
+      ],
+      "postconditions": [
+        "The blocked validation request is submitted and its governed feedback is accessible using only the keyboard.",
+        "If audit details were opened, they were reviewable and closable without focus loss.",
+        "A blocked validation event remains recorded for the submitted query as part of normal system behavior."
+      ]
+    },
+    {
+      "id": "TC-ACCE-002",
+      "title": "Screen reader announces validation form fields, governed response status, and audit information with meaningful labels and live updates",
+      "category": "Accessibility",
+      "priority": "High",
+      "preconditions": [
+        "Validation UI is available in a supported browser with a screen reader enabled, such as NVDA with Chrome or JAWS with Edge.",
+        "Test user is authenticated as Data Governance Manager and can access the query validation page and audit details.",
+        "A valid query example is available: \"SELECT report_month, dealer_region, total_sales FROM reporting.sales_summary_vw LIMIT 100;\".",
+        "A blocked query example is available: \"DROP TABLE reporting.sales_summary_vw;\" to verify error and status announcements."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to the query validation page with the screen reader running and move through the page landmarks, heading, SQL input field, and Validate button.",
+          "expectedResult": "The page exposes a meaningful heading, the SQL input has an accessible name that identifies it as the query entry field, and the Validate button is announced with a clear role and label."
+        },
+        {
+          "step": 2,
+          "action": "Enter the valid query example and activate the \"Validate\" button while listening to screen reader announcements.",
+          "expectedResult": "The UI announces that validation has started or that content is updating, and when complete it announces a success status or result region without requiring the user to search manually for the outcome."
+        },
+        {
+          "step": 3,
+          "action": "Move through the successful validation result and any audit summary details using screen reader navigation commands.",
+          "expectedResult": "The result area is announced with understandable text including the validation outcome, and audit fields such as queryId, requester role, referenced objects, and timestamp have meaningful labels."
+        },
+        {
+          "step": 4,
+          "action": "Replace the SQL with the blocked query example \"DROP TABLE reporting.sales_summary_vw;\" and activate the \"Validate\" button again.",
+          "expectedResult": "The screen reader announces the blocked status and the governed, non-sensitive reason code or error message through a live region, alert, or otherwise programmatically determinable status message."
+        },
+        {
+          "step": 5,
+          "action": "Navigate the blocked-result content and any linked audit detail control.",
+          "expectedResult": "The blocked outcome, reason code, and audit information are announced in reading order with no unlabeled buttons, ambiguous links, or inaccessible status indicators."
+        },
+        {
+          "step": 6,
+          "action": "If a results panel refreshes dynamically, verify with the screen reader that focus context remains understandable after the update.",
+          "expectedResult": "Dynamic content changes do not leave the user unaware of the result; the user can identify whether the query passed or was blocked and review the related audit data."
+        }
+      ],
+      "postconditions": [
+        "Validation form controls and result content are programmatically determinable and usable with a screen reader.",
+        "Both successful and blocked validation outcomes are announced in an accessible manner.",
+        "Any generated audit details remain available and labeled for assistive technology users."
+      ]
+    },
+    {
+      "id": "TC-ACCE-003",
+      "title": "Validation results remain readable and operable at 200% zoom with adequate contrast for pass and blocked states",
+      "category": "Accessibility",
+      "priority": "Medium",
+      "preconditions": [
+        "Validation UI is available in a supported desktop browser with browser zoom controls enabled.",
+        "Authenticated Data Governance Manager can access the query validation page and produce both pass and blocked outcomes.",
+        "A passing query example and a blocked query example are available for repeated use during the test.",
+        "Color contrast inspection tooling or browser developer tooling is available if needed for verification."
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open the query validation page and increase browser zoom to 200%.",
+          "expectedResult": "The page content scales without loss of core functionality, and horizontal scrolling is limited to unavoidable containers such as code editors if present."
+        },
+        {
+          "step": 2,
+          "action": "At 200% zoom, enter the passing query example in the SQL input field and submit validation.",
+          "expectedResult": "The input field, Validate button, and resulting success status remain visible, readable, and operable without overlapping text or clipped controls."
+        },
+        {
+          "step": 3,
+          "action": "Inspect the pass-state UI elements, including status badge, response message, and any audit summary shown on screen.",
+          "expectedResult": "Text remains legible, status is not conveyed by color alone, and pass indicators meet readable contrast expectations against their background."
+        },
+        {
+          "step": 4,
+          "action": "Replace the SQL with the blocked query example and submit validation again while still at 200% zoom.",
+          "expectedResult": "The blocked response renders correctly at zoom, with the governed reason code and action controls fully visible and operable."
+        },
+        {
+          "step": 5,
+          "action": "Inspect the blocked-state visual treatment, including error banner, blocked status badge, and any inline reason-code text.",
+          "expectedResult": "Blocked status is communicated by text or iconography in addition to color, and foreground/background contrast is sufficient for critical messages and controls."
+        },
+        {
+          "step": 6,
+          "action": "Open any audit details panel or expandable section at 200% zoom and review the fields.",
+          "expectedResult": "Audit details remain readable, controls are not obscured, and users can complete the validation-review flow without reducing zoom."
+        }
+      ],
+      "postconditions": [
+        "Core validation and result-review tasks remain usable at 200% zoom for both pass and blocked outcomes.",
+        "Critical status information is available beyond color-only cues and remains readable.",
+        "No layout issue prevents the user from accessing governed feedback or audit information."
+      ]
+    }
+  ],
+  "selectedTypes": {
+    "functional": true,
+    "edgeCases": true,
+    "negative": true,
+    "accessibility": true,
+    "performance": false,
+    "security": false,
+    "usability": false,
+    "reliability": false
+  },
+  "userStoryObject": {
+    "id": "ado-3434",
+    "title": "As a Data Governance Manager, I want AI-generated PostgreSQL queries validated against access and compliance rules so that automotive reporting data remains secure and governed",
+    "description": "<div><strong>CONTEXT &amp; BACKGROUND:</strong><br><br>This story exists to enforce governance controls before AI-generated PostgreSQL queries are executed for automotive reporting. Because natural-language requests may reference customer, vehicle, financing, warranty, and dealer data, the platform must validate generated SQL against role permissions, approved reporting schemas, and compliance policies so reporting remains secure and auditable.<br><br><strong>CURRENT STATE:</strong><br><br>Generated SQL can currently pose risk by referencing unauthorized tables or fields, using unsafe query constructs, or requesting result sets that are too broad for the user's role. Without pre-execution validation, the system could expose protected automotive data, violate GDPR or CCPA handling rules, or send resource-intensive queries to PostgreSQL.<br><br><strong>DESIRED STATE:</strong><br><br>All candidate SQL is screened before execution using approved PostgreSQL access policies, read-only enforcement, row and column restrictions, masking rules, and execution safety thresholds. Queries that satisfy governance rules proceed to controlled execution, while blocked queries return policy-safe feedback without reaching PostgreSQL.<br><br><strong>KEY FUNCTIONALITY:</strong><br><br><div>• Validate generated SQL against approved PostgreSQL schemas, tables, views, and role mappings for the requesting user </div><br/><div>• Reject non-read-only statements and unsafe patterns such as DDL, DML, multi-statement payloads, and prohibited functions </div><br/><div>• Enforce row-level and column-level protections for customer, vehicle, financing, warranty, and dealer reporting data </div><br/><div>• Apply masking, redaction, or field exclusion based on GDPR, CCPA, and internal data-classification metadata </div><br/><div>• Enforce row limits, pagination requirements, and timeout thresholds before release to execution </div><br><br><strong>USER INTERACTION FLOW:</strong><br><br><div>1. Data Governance Manager maintains access policy metadata for reporting roles, approved data domains, and protected fields. </div><br/><div>2. A reporting request is translated into candidate PostgreSQL SQL by the AI query workflow. </div><br/><div>3. The validation service loads the requester's role, approved schemas, policy metadata, and data-classification rules. </div><br/><div>4. The service parses the SQL and checks statement type, referenced objects, join scope, fields, and estimated execution controls. </div><br/><div>5. The service applies row-level, column-level, and masking or redaction rules for protected automotive data elements. </div><br/><div>6. If any rule fails, the system blocks execution and returns a governed validation response with a non-sensitive reason code. </div><br/><div>7. If all checks pass, the system records the validation outcome and releases the query for controlled execution. </div><br><br><strong>TECHNICAL CONSIDERATIONS:</strong><br><br><div>• Data source: PostgreSQL catalog metadata, role-policy mappings, approved reporting views, data-classification catalog, and immutable audit log storage </div><br/><div>• Validation: Parse SQL into an AST, allow only SELECT-based read operations, enforce approved schemas and joins, require row limits, and reject excessive timeout or cardinality risk according to policy </div><br/><div>• Security: Validate SSO token claims, derive RBAC permissions from the authenticated role, sanitize request payloads, prevent policy-bypass through comments or stacked statements, and store immutable validation events </div><br/><div>• Observability: Emit structured logs and metrics for validation pass rate, block reasons, policy lookup latency, and attempted restricted-field access by role </div><br/><div>• Performance: Keep validation overhead low enough to support the platform's 10-second successful request SLA while blocking database-intensive queries before PostgreSQL execution </div><br><br><strong>OUT OF SCOPE:</strong><br><br><div>• Admin tooling for enterprise-wide identity or role provisioning outside reporting policy configuration </div><br/><div>• Exporting governed query results to third-party partner platforms </div><br/><div>• Manual PostgreSQL tuning or index design for unrelated database workloads </div><br><br><strong>SUCCESS METRICS:</strong><br><br><div>• 100% of executed queries have a recorded successful validation event before any PostgreSQL execution attempt </div><br/><div>• 0 unauthorized exposure of restricted customer, vehicle, financing, warranty, or dealer fields through approved reporting flows </div><br/><div>• 100% of blocked queries return a governed response with a recorded policy reason code and no database execution </div> </div><br><div><strong>Persona:</strong> Data Governance Manager (Data Governance Manager) </div>",
+    "acceptanceCriteria": "<div>1. When POST /api/reporting/query-validations receives AI-generated SQL, the service shall reject any statement that is not read-only SELECT-based SQL, including INSERT, UPDATE, DELETE, ALTER, DROP, CREATE, COPY, and multi-statement payloads. </div><br/><div>2. The validation service shall allow access only to PostgreSQL schemas, tables, and views mapped to the authenticated user's reporting role, and shall block execution when the SQL references an unapproved object. </div><br/><div>3. If the generated SQL references protected customer, vehicle, financing, warranty, or dealer columns, the service shall apply the configured masking, redaction, or exclusion rule from policy metadata before the query is eligible for execution. </div><br/><div>4. The service shall block queries that exceed configured safety controls, including missing or excessive row limits, disallowed join scope, or estimated execution timeout risk, and return a governed response without calling POST /api/reporting/query-executions. </div><br/><div>5. Each validation attempt shall create an immutable audit record containing queryId, requester role, referenced objects, validation outcome, policy reason code, and timestamp so execution can be traced to a completed governance decision. </div>",
+    "adoWorkItemId": 3434,
+    "state": "New",
+    "assignedTo": "Unassigned",
+    "createdDate": "2026-09-23T11:29:25.393Z",
+    "priority": 2,
+    "storyPoints": 5,
+    "tags": "devx-brd-c19a882c-c19a-4690-9af6-b76b273bf4d1",
+    "brdId": "c19a882c-c19a-4690-9af6-b76b273bf4d1",
+    "epicId": "epic-3376",
+    "featureId": "feature-3386",
+    "source": "ado",
+    "adoUrl": "https://dev.azure.com/delta-studio/8f843efc-0511-4050-adaf-8ffa27fbac9f/_workitems/edit/3434"
+  }
+}
